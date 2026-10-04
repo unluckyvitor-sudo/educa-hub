@@ -10,6 +10,8 @@ import { SERIES, SERIE_POR_ID } from '../conteudo/index.js';
 import { concederGanho } from '../regras.js';
 import { buscarUsuario } from '../consultas.js';
 import { estaOnline, totalOnline, notificar, desconectarUsuario } from '../tempoReal.js';
+import { fazerCopia, resumoDasCopias } from '../copias.js';
+import { limitar, HORA } from '../limites.js';
 
 const rotas = Router();
 rotas.use(exigirPapel('admin'));
@@ -84,12 +86,20 @@ rotas.get('/resumo', async (_req, res) => {
     chamadosAbertos: contar("SELECT COUNT(*) AS n FROM chamados WHERE responsavel_id IS NULL AND status = 'aberto'"),
     feedbacksNovos: contar('SELECT COUNT(*) AS n FROM feedbacks WHERE lido = 0'),
     avisos: await avisosDeSeguranca(),
+    copias: resumoDasCopias(),
     atividadesPorDia: Array.from({ length: 14 }, (_, i) => {
       const dia = diasAtras(13 - i);
       return { dia, total: porDia[dia] ?? 0 };
     }),
     alunosPorSerie: SERIES.map((s) => ({ serie: s.id, nome: s.nome, total: porSerie[s.id] ?? 0 })),
   });
+});
+
+// Cópia de segurança sob demanda (antes de uma mudança grande, por exemplo). A diária é automática.
+rotas.post('/copias', limitar('copia', 12, HORA, 'Muitas cópias em pouco tempo. Aguarde um pouco.'), (req, res) => {
+  const copia = fazerCopia();
+  registrar('admin.copia', { usuarioId: req.usuario.id, ip: req.ip, detalhe: copia.nome });
+  res.status(201).json({ copias: resumoDasCopias() });
 });
 
 rotas.get('/usuarios', (req, res) => {

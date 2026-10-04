@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, mensagemDoErro } from '../../api';
 import { avisar, useEstado } from '../../estado';
 import { Carregando, ErroDeCarga, useCarregar } from '../../componentes/comuns';
 import { Icone } from '../../componentes/Icone';
+import { haQuantoTempo } from '../../visual';
 import { BarrasPorDia, Indicador } from '../../componentes/VisaoProgresso';
 import { Saudacao } from '../aluno/Inicio';
 
@@ -24,6 +26,13 @@ export interface UsuarioAdmin {
   online: boolean;
 }
 
+interface Copias {
+  ultima: { nome: string; tamanho: number; criadaEm: string } | null;
+  total: number;
+  pasta: string;
+  manter: number;
+}
+
 interface Resumo {
   alunos: number;
   professores: number;
@@ -37,6 +46,7 @@ interface Resumo {
   feedbacksNovos: number;
   /** Pendências de segurança que só o administrador resolve. */
   avisos: string[];
+  copias: Copias;
   atividadesPorDia: { dia: string; total: number }[];
   alunosPorSerie: { serie: string; nome: string; total: number }[];
 }
@@ -52,6 +62,20 @@ export function PainelAdmin() {
       recarregar();
     } catch (falha) {
       avisar(mensagemDoErro(falha), 'erro');
+    }
+  };
+
+  const [copiando, setCopiando] = useState(false);
+  const fazerCopia = async () => {
+    setCopiando(true);
+    try {
+      await api('/admin/copias', { metodo: 'POST' });
+      avisar('Cópia de segurança gravada.', 'sucesso');
+      recarregar();
+    } catch (falha) {
+      avisar(mensagemDoErro(falha), 'erro');
+    } finally {
+      setCopiando(false);
     }
   };
 
@@ -139,6 +163,22 @@ export function PainelAdmin() {
                 </div>
               </section>
             )}
+
+            <section className="cartao linha quebra">
+              <Icone nome="escudo" tamanho={28} style={{ color: '#22b573' }} />
+              <div className="cresce" style={{ flexBasis: 260 }}>
+                <strong>Cópia de segurança</strong>
+                <div className="suave pequeno">
+                  {dados.copias.ultima
+                    ? `Última: ${haQuantoTempo(dados.copias.ultima.criadaEm)} · ${(dados.copias.ultima.tamanho / 1024 / 1024).toFixed(1)} MB · ${dados.copias.total} guardadas`
+                    : 'Nenhuma cópia ainda.'}{' '}
+                  Uma por dia é feita sozinha; as {dados.copias.manter} mais recentes ficam em <code>{dados.copias.pasta}</code>.
+                </div>
+              </div>
+              <button className="botao claro pequeno" onClick={() => void fazerCopia()} disabled={copiando}>
+                {copiando ? 'Copiando...' : 'Fazer cópia agora'}
+              </button>
+            </section>
 
             <div className="grade-2">
               <section className="cartao">

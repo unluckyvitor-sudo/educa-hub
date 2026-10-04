@@ -9,6 +9,7 @@ import { carregarUsuario, gerarHash, limparSessoesVencidas, ErroDeEntrada } from
 import { iniciarTempoReal } from './tempoReal.js';
 import { limitar, MINUTO, HORA } from './limites.js';
 import { limparRegistrosAntigos } from './registro.js';
+import { copiaDiaria } from './copias.js';
 import rotasConta from './rotas/conta.js';
 import rotasAprender from './rotas/aprender.js';
 import rotasSocial from './rotas/social.js';
@@ -97,10 +98,11 @@ iniciarTempoReal(servidor);
 
 await garantirAdministrador();
 
-// Faxina periódica: sessões vencidas e registros de auditoria antigos.
+// Faxina periódica: sessões vencidas, registros de auditoria antigos e a cópia de segurança do dia.
 const faxina = () => {
   limparSessoesVencidas();
   limparRegistrosAntigos();
+  copiaDiaria();
 };
 faxina();
 setInterval(faxina, 6 * HORA).unref();
