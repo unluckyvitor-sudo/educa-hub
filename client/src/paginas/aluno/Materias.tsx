@@ -8,7 +8,7 @@ import type { MateriaResumo } from '../../tipos';
 
 export function Materias() {
   const usuario = useEstado((e) => e.usuario)!;
-  const { dados, erro } = useCarregar(() => api<{ materias: MateriaResumo[]; total: number; concluidas: number; erros: number }>('/materias'));
+  const { dados, erro, recarregar } = useCarregar(() => api<{ materias: MateriaResumo[]; total: number; concluidas: number; erros: number }>('/materias'));
 
   return (
     <div className="pagina">
@@ -21,7 +21,7 @@ export function Materias() {
         </div>
       </div>
       {erro ? (
-        <ErroDeCarga erro={erro} />
+        <ErroDeCarga erro={erro} aoTentar={recarregar} />
       ) : !dados ? (
         <Carregando />
       ) : (

@@ -56,6 +56,9 @@ const duelos = new Map(); // id → duelo
 const dueloDoUsuario = new Map(); // usuarioId → id do duelo
 const fila = new Map(); // "serie|materia" → usuarioId aguardando oponente
 const convites = new Map(); // id → { de, para, materia, timer }
+// Quem caiu no meio de um duelo tem este tempo para voltar antes de contar como desistência.
+const TOLERANCIA_DE_QUEDA_MS = Number(process.env.EDUCAHUB_TOLERANCIA_QUEDA_MS) || 20_000;
+const ausentes = new Map(); // usuarioId → temporizador da tolerância
 
 function sortearQuestoes(serie, materia) {
   return embaralhar(questoesPublicas(serie, materia))
@@ -101,21 +104,63 @@ function criarDuelo({ tipo, serie, materia, jogadores }) {
     sairDaFila(j.id);
     dueloDoUsuario.set(j.id, duelo.id);
   }
-  for (const j of duelo.jogadores) {
-    if (j.bot) continue;
-    const oponente = duelo.jogadores.find((o) => o.id !== j.id);
-    enviarPara(j.id, 'duelo:inicio', {
-      id: duelo.id,
-      tipo,
-      materia: materia ? MATERIAS[materia] : 'Todas as matérias',
-      total: questoes.length,
-      tempo: TEMPO_QUESTAO_S,
-      chatLivre: tipo === 'amigo',
-      oponente: { id: oponente.id, nome: oponente.nome, usuario: oponente.usuario, nivel: oponente.nivel, avatar: oponente.avatar, bot: !!oponente.bot },
-    });
-  }
+  for (const j of duelo.jogadores) if (!j.bot) enviarPara(j.id, 'duelo:inicio', infoDoDuelo(duelo, j.id));
   agendar(duelo, () => proximaPergunta(duelo), 4200);
   return duelo;
+}
+
+/** O que um jogador precisa saber do duelo: mandado no início e de novo quando ele volta de uma queda de conexão. */
+function infoDoDuelo(duelo, usuarioId) {
+  const oponente = duelo.jogadores.find((o) => o.id !== usuarioId);
+  return {
+    id: duelo.id,
+    tipo: duelo.tipo,
+    materia: duelo.materia ? MATERIAS[duelo.materia] : 'Todas as matérias',
+    total: duelo.questoes.length,
+    tempo: TEMPO_QUESTAO_S,
+    chatLivre: duelo.tipo === 'amigo',
+    oponente: { id: oponente.id, nome: oponente.nome, usuario: oponente.usuario, nivel: oponente.nivel, avatar: oponente.avatar, bot: !!oponente.bot },
+  };
+}
+
+function esquecerAusencias(duelo) {
+  for (const j of duelo.jogadores) {
+    clearTimeout(ausentes.get(j.id));
+    ausentes.delete(j.id);
+  }
+}
+
+/**
+ * Chamado a cada conexão: quem está em um duelo recebe o estado atual para continuar de onde parou
+ * (queda de internet, página recarregada); quem não está é avisado, para sair de uma tela de duelo que já acabou.
+ */
+function retomarDuelo(socket, usuarioId) {
+  const duelo = duelos.get(dueloDoUsuario.get(usuarioId));
+  if (!duelo) return void socket.emit('duelo:nenhum', {});
+  const eu = duelo.jogadores.find((j) => j.id === usuarioId);
+  const oponente = duelo.jogadores.find((j) => j.id !== usuarioId);
+  if (ausentes.has(usuarioId)) {
+    clearTimeout(ausentes.get(usuarioId));
+    ausentes.delete(usuarioId);
+    if (!oponente.bot) enviarPara(oponente.id, 'duelo:oponenteVoltou', {});
+  }
+  const q = duelo.fase === 'pergunta' ? duelo.questoes[duelo.indice] : null;
+  socket.emit('duelo:retomar', {
+    info: infoDoDuelo(duelo, usuarioId),
+    pontos: Object.fromEntries(duelo.jogadores.map((j) => [j.id, j.pontos])),
+    // Entre duas perguntas não há o que mostrar: a próxima chega em instantes.
+    pergunta: q && {
+      indice: duelo.indice,
+      total: duelo.questoes.length,
+      enunciado: q.enunciado,
+      alternativas: q.alternativas,
+      materia: q.materia,
+      tempo: TEMPO_QUESTAO_S,
+      decorridoMs: Date.now() - duelo.inicioPergunta,
+    },
+    minhaResposta: q ? (eu.rodada?.resposta ?? null) : null,
+    oponenteRespondeu: !!(q && oponente.rodada),
+  });
 }
 
 function agendar(duelo, fn, ms) {
@@ -135,6 +180,7 @@ function agendar(duelo, fn, ms) {
 function cancelarDuelo(duelo) {
   duelos.delete(duelo.id);
   duelo.timers.forEach(clearTimeout);
+  esquecerAusencias(duelo);
   for (const j of duelo.jogadores) {
     if (j.bot) continue;
     dueloDoUsuario.delete(j.id);
@@ -202,6 +248,7 @@ function fecharPergunta(duelo) {
 function finalizar(duelo, abandonoDe = null) {
   if (!duelos.delete(duelo.id)) return;
   duelo.timers.forEach(clearTimeout);
+  esquecerAusencias(duelo);
   const [a, b] = duelo.jogadores;
   let vencedor = null;
   if (abandonoDe != null) vencedor = duelo.jogadores.find((j) => j.id !== abandonoDe);
@@ -399,7 +446,23 @@ function aoDesconectar(usuarioId) {
     if (convite.de === usuarioId) enviarPara(convite.para, 'duelo:conviteCancelado', { conviteId: id });
   }
   const duelo = duelos.get(dueloDoUsuario.get(usuarioId));
-  if (duelo) finalizar(duelo, usuarioId);
+  if (!duelo) return;
+  // Queda de conexão não é desistência: o duelo segue (quem caiu só deixa de responder) e há um prazo para voltar.
+  const oponente = duelo.jogadores.find((j) => j.id !== usuarioId);
+  if (!oponente.bot) enviarPara(oponente.id, 'duelo:oponenteAusente', { segundos: Math.round(TOLERANCIA_DE_QUEDA_MS / 1000) });
+  clearTimeout(ausentes.get(usuarioId));
+  ausentes.set(
+    usuarioId,
+    setTimeout(() => {
+      ausentes.delete(usuarioId);
+      try {
+        const atual = duelos.get(dueloDoUsuario.get(usuarioId));
+        if (atual && !estaOnline(usuarioId)) finalizar(atual, usuarioId);
+      } catch (falha) {
+        console.error('Erro ao encerrar um duelo por ausência:', falha);
+      }
+    }, TOLERANCIA_DE_QUEDA_MS),
+  );
 }
 
 export function iniciarTempoReal(servidorHttp) {
@@ -434,6 +497,11 @@ export function iniciarTempoReal(servidorHttp) {
     if (abertos === 1) avisarPresenca(usuarioId, true);
 
     registrarEventosDeDuelo(socket, usuarioId);
+    try {
+      retomarDuelo(socket, usuarioId);
+    } catch (falha) {
+      console.error('Erro ao retomar um duelo:', falha);
+    }
 
     socket.on('disconnect', () => {
       const restantes = (conexoes.get(usuarioId) ?? 1) - 1;

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEstado } from '../estado';
 import { mensagemDoErro } from '../api';
+import { Icone } from './Icone';
 
 export function Carregando({ texto = 'Carregando...' }: { texto?: string }) {
   return (
@@ -126,14 +127,24 @@ export function useCarregar<T>(buscar: () => Promise<T>, dependencias: unknown[]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...dependencias, versao]);
 
-  return { dados, erro, recarregar: () => setVersao((v) => v + 1), definir: setDados };
+  const recarregar = () => {
+    setErro(null); // depois de uma falha, volta a mostrar "carregando" enquanto tenta de novo
+    setVersao((v) => v + 1);
+  };
+  return { dados, erro, recarregar, definir: setDados };
 }
 
-export function ErroDeCarga({ erro }: { erro: string }) {
+/** Aviso de que os dados não vieram, com o botão para tentar de novo (sem `aoTentar`, recarrega a página). */
+export function ErroDeCarga({ erro, aoTentar }: { erro: string; aoTentar?: () => void }) {
   return (
     <div className="vazio">
       <strong>Ops!</strong>
       {erro}
+      <div style={{ marginTop: 14 }}>
+        <button className="botao claro pequeno" onClick={aoTentar ?? (() => window.location.reload())}>
+          <Icone nome="atualizar" tamanho={16} /> Tentar de novo
+        </button>
+      </div>
     </div>
   );
 }

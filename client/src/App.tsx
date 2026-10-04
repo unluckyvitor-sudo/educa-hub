@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useEstado } from './estado';
-import { conectarTempoReal, useDuelo } from './tempoReal';
+import { conectarTempoReal, desconectarTempoReal, useDuelo } from './tempoReal';
 import { Avisos, Carregando, Modal } from './componentes/comuns';
 import { Icone } from './componentes/Icone';
 import { Logo } from './componentes/Logo';
@@ -13,11 +13,10 @@ import { Aguardando } from './paginas/Aguardando';
 import { Configuracoes } from './paginas/Configuracoes';
 import { Perfil } from './paginas/Perfil';
 import { Biblioteca } from './paginas/Biblioteca';
-import { Conteudo } from './paginas/Conteudo';
 import { AoVivo, ConviteAoVivo } from './paginas/AoVivo';
+import { AceiteDosTermos, Termos } from './paginas/Termos';
 import { Ajuda } from './paginas/Ajuda';
 import { Chamado } from './paginas/Chamado';
-import { Atendimento } from './paginas/Atendimento';
 import { Inicio } from './paginas/aluno/Inicio';
 import { Materias } from './paginas/aluno/Materias';
 import { Materia } from './paginas/aluno/Materia';
@@ -27,16 +26,20 @@ import { Duelo } from './paginas/aluno/Duelo';
 import { MeuProgresso } from './paginas/aluno/MeuProgresso';
 import { MeuAvatar } from './paginas/aluno/MeuAvatar';
 import { Amigos } from './paginas/aluno/Amigos';
-import { PainelProfessor } from './paginas/professor/PainelProfessor';
-import { Turmas } from './paginas/professor/Turmas';
-import { TurmaDetalhe } from './paginas/professor/TurmaDetalhe';
-import { MissoesProfessor } from './paginas/professor/MissoesProfessor';
-import { AlunoDetalhe } from './paginas/professor/AlunoDetalhe';
-import { PainelAdmin } from './paginas/admin/PainelAdmin';
-import { UsuariosAdmin } from './paginas/admin/UsuariosAdmin';
-import { TurmasAdmin } from './paginas/admin/TurmasAdmin';
-import { Moderacao } from './paginas/admin/Moderacao';
-import { Feedbacks } from './paginas/admin/Feedbacks';
+
+// Páginas de professor e de administrador: carregadas só quando abertas, para o aluno não baixar esse código.
+const Conteudo = lazy(() => import('./paginas/Conteudo').then((m) => ({ default: m.Conteudo })));
+const Atendimento = lazy(() => import('./paginas/Atendimento').then((m) => ({ default: m.Atendimento })));
+const PainelProfessor = lazy(() => import('./paginas/professor/PainelProfessor').then((m) => ({ default: m.PainelProfessor })));
+const Turmas = lazy(() => import('./paginas/professor/Turmas').then((m) => ({ default: m.Turmas })));
+const TurmaDetalhe = lazy(() => import('./paginas/professor/TurmaDetalhe').then((m) => ({ default: m.TurmaDetalhe })));
+const MissoesProfessor = lazy(() => import('./paginas/professor/MissoesProfessor').then((m) => ({ default: m.MissoesProfessor })));
+const AlunoDetalhe = lazy(() => import('./paginas/professor/AlunoDetalhe').then((m) => ({ default: m.AlunoDetalhe })));
+const PainelAdmin = lazy(() => import('./paginas/admin/PainelAdmin').then((m) => ({ default: m.PainelAdmin })));
+const UsuariosAdmin = lazy(() => import('./paginas/admin/UsuariosAdmin').then((m) => ({ default: m.UsuariosAdmin })));
+const TurmasAdmin = lazy(() => import('./paginas/admin/TurmasAdmin').then((m) => ({ default: m.TurmasAdmin })));
+const Moderacao = lazy(() => import('./paginas/admin/Moderacao').then((m) => ({ default: m.Moderacao })));
+const Feedbacks = lazy(() => import('./paginas/admin/Feedbacks').then((m) => ({ default: m.Feedbacks })));
 
 // Páginas de desenvolvimento (/laboratorio e /visor): carregadas sob demanda e ausentes do build de produção.
 const PAGINAS_DEV: Record<string, ReturnType<typeof lazy>> = import.meta.env.DEV
@@ -92,7 +95,8 @@ function useIrParaODuelo() {
   const navegar = useNavigate();
   const { pathname } = useLocation();
   useEffect(() => {
-    if (fase === 'inicio' && pathname !== '/duelo') navegar('/duelo');
+    // 'pergunta' fora da arena: o aluno recarregou a página (ou a conexão caiu) no meio de um duelo e está voltando.
+    if ((fase === 'inicio' || fase === 'pergunta') && pathname !== '/duelo') navegar('/duelo');
     // Convite enviado ou busca iniciada em outra página: a espera acontece na aba de duelos.
     if ((fase === 'buscando' || fase === 'convidando') && pathname !== '/desafios') navegar('/desafios?aba=duelos');
   }, [fase, pathname, navegar]);
@@ -112,7 +116,7 @@ export function App() {
 
   const id = usuario?.id;
   useEffect(() => {
-    if (!id) return;
+    if (!id) return void desconectarTempoReal(); // saiu (ou a sessão expirou): fecha o canal de tempo real
     conectarTempoReal();
     void carregarNotificacoes();
     void carregarSuporte();
@@ -127,11 +131,14 @@ export function App() {
       </Suspense>
     );
   }
+  // Os documentos abrem com ou sem login (o cadastro aponta para eles).
+  if (pathname === '/termos' || pathname === '/privacidade') return <Termos documento={pathname === '/termos' ? 'termos' : 'privacidade'} />;
   if (carregando) return <Carregando texto="Acordando o gato..." />;
 
   const papel = usuario?.papel;
   return (
     <>
+      <Suspense fallback={<Carregando />}>
       <Routes>
         {!usuario ? (
           <>
@@ -206,6 +213,8 @@ export function App() {
           </>
         )}
       </Routes>
+      </Suspense>
+      {usuario && <AceiteDosTermos />}
       {papel === 'aluno' && <ConviteDeDuelo />}
       {papel === 'aluno' && <ConviteAoVivo />}
       <Avisos />

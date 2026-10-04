@@ -273,6 +273,18 @@ CREATE TABLE IF NOT EXISTS erros (
 );
 `);
 
+/** Colunas criadas depois da primeira versão: o banco de quem já usa a plataforma é atualizado ao ligar o servidor. */
+function garantirColuna(tabela, coluna, definicao) {
+  const existe = db.prepare(`PRAGMA table_info(${tabela})`).all().some((c) => c.name === coluna);
+  if (!existe) db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`);
+}
+
+// Aceite dos termos e autorização do responsável (ver termos.js).
+garantirColuna('usuarios', 'termos_versao', 'TEXT');
+garantirColuna('usuarios', 'termos_em', 'TEXT');
+garantirColuna('usuarios', 'responsavel', 'TEXT');
+garantirColuna('usuarios', 'consentimento_em', 'TEXT');
+
 /** Executa a função dentro de uma transação. */
 export function transacao(fn) {
   db.exec('BEGIN');

@@ -65,7 +65,20 @@ const anonimo = clienteDe(null);
 
 // ───────── Cadastro: nomes reservados e limites de login ─────────
 {
-  const base = { senha: crypto.randomBytes(9).toString('base64url'), papel: 'aluno', serie: 'F6' };
+  // Um cadastro completo e válido: cada teste abaixo estraga só um campo, para a recusa vir do motivo certo.
+  const base = {
+    senha: crypto.randomBytes(9).toString('base64url'), papel: 'aluno', serie: 'F6', nascimento: '2014-05-20',
+    aceitouTermos: true, responsavel: 'Responsável de Teste', autorizacaoDoResponsavel: true,
+  };
+  const novo = () => `t${crypto.randomBytes(4).toString('hex')}`;
+  const recusa = async (corpo, trecho) => {
+    const r = await anonimo.post('/auth/cadastro', { ...base, usuario: novo(), nome: 'Fulano de Tal', ...corpo });
+    return r.status === 400 && r.dados.erro.includes(trecho);
+  };
+  verificar(await recusa({ aceitouTermos: false }, 'Termos de uso'), 'cadastro sem aceitar os termos é recusado');
+  verificar(await recusa({ nascimento: '' }, 'data de nascimento'), 'aluno sem data de nascimento é recusado');
+  verificar(await recusa({ responsavel: '' }, 'responsável'), 'menor de idade sem o nome do responsável é recusado');
+  verificar(await recusa({ autorizacaoDoResponsavel: false }, 'responsável'), 'menor de idade sem a autorização do responsável é recusado');
   const reservado = await anonimo.post('/auth/cadastro', { ...base, usuario: 'admin.suporte', nome: 'Fulano de Tal' });
   verificar(reservado.status === 400, 'nome de usuário "admin.suporte" é reservado');
   const impostor = await anonimo.post('/auth/cadastro', { ...base, usuario: `t${crypto.randomBytes(4).toString('hex')}`, nome: 'Suporte EducaHub' });
@@ -102,8 +115,9 @@ if (senhas.admin) {
   // Conta temporária: trocar a senha encerra a sessão aberta em outro aparelho.
   const usuario = `teste.${crypto.randomBytes(4).toString('hex')}`;
   const senha = crypto.randomBytes(9).toString('base64url');
-  const cadastro = await anonimo.post('/auth/cadastro', { usuario, senha, nome: 'Conta de Teste', papel: 'aluno', serie: 'F6' });
-  verificar(cadastro.status === 201, 'conta temporária criada');
+  // Aluno adulto: basta aceitar os termos, sem responsável.
+  const cadastro = await anonimo.post('/auth/cadastro', { usuario, senha, nome: 'Conta de Teste', papel: 'aluno', serie: 'UEX', nascimento: '2000-01-15', aceitouTermos: true });
+  verificar(cadastro.status === 201 && cadastro.dados.usuario.pendencias === null, 'conta temporária criada (adulto: só o aceite dos termos)');
   try {
     const aparelho1 = await entrar(usuario, senha);
     const aparelho2 = await entrar(usuario, senha);

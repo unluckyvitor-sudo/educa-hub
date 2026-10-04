@@ -14,7 +14,7 @@ interface TurmaAdmin {
 }
 
 export function TurmasAdmin() {
-  const { dados, erro } = useCarregar(() => api<{ turmas: TurmaAdmin[] }>('/admin/turmas'));
+  const { dados, erro, recarregar } = useCarregar(() => api<{ turmas: TurmaAdmin[] }>('/admin/turmas'));
   return (
     <div className="pagina">
       <div className="pagina-cabecalho">
@@ -25,7 +25,7 @@ export function TurmasAdmin() {
       </div>
       <section className="cartao">
         {erro ? (
-          <ErroDeCarga erro={erro} />
+          <ErroDeCarga erro={erro} aoTentar={recarregar} />
         ) : !dados ? (
           <Carregando />
         ) : dados.turmas.length === 0 ? (

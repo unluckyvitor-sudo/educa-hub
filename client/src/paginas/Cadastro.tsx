@@ -4,6 +4,7 @@ import { api, mensagemDoErro } from '../api';
 import { useEstado } from '../estado';
 import { useCarregar } from '../componentes/comuns';
 import { SeletorDePapel, TelaDeAcesso } from './Entrar';
+import { ACEITE_VAZIO, CamposDeAceite, menorDeIdade } from './Termos';
 import type { Catalogo, Papel, Usuario } from '../tipos';
 
 /** Escolha do nível de ensino: primeiro a etapa, depois a série (ou área, no superior). */
@@ -46,7 +47,8 @@ export function Cadastro() {
   const definirUsuario = useEstado((e) => e.definirUsuario);
   const { dados: catalogo } = useCarregar(() => api<Catalogo>('/catalogo'));
   const [papel, setPapel] = useState<Papel>('aluno');
-  const [campos, setCampos] = useState({ nome: '', usuario: '', senha: '', instituicao: '', curso: '', disciplinas: '' });
+  const [campos, setCampos] = useState({ nome: '', usuario: '', senha: '', instituicao: '', curso: '', disciplinas: '', nascimento: '' });
+  const [aceite, setAceite] = useState(ACEITE_VAZIO);
   const [serie, setSerie] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -62,7 +64,7 @@ export function Cadastro() {
     setErro(null);
     setEnviando(true);
     try {
-      const resposta = await api<{ usuario: Usuario }>('/auth/cadastro', { corpo: { ...campos, papel, serie } });
+      const resposta = await api<{ usuario: Usuario }>('/auth/cadastro', { corpo: { ...campos, ...aceite, papel, serie } });
       definirUsuario(resposta.usuario);
     } catch (falha) {
       setErro(mensagemDoErro(falha));
@@ -110,6 +112,13 @@ export function Cadastro() {
           <input className="entrada" value={campos.instituicao} onChange={mudar('instituicao')} maxLength={100} />
         </label>
 
+        {papel === 'aluno' && (
+          <label className="campo">
+            <span>Data de nascimento</span>
+            <input className="entrada" type="date" value={campos.nascimento} onChange={mudar('nascimento')} max={new Date().toISOString().slice(0, 10)} autoComplete="bday" required />
+          </label>
+        )}
+
         {papel === 'aluno' ? (
           <div className="campo">
             <span>O que você está estudando?</span>
@@ -125,6 +134,8 @@ export function Cadastro() {
             <p className="pequeno suave">Contas de professor passam por aprovação do administrador antes de liberar as turmas.</p>
           </>
         )}
+
+        <CamposDeAceite valor={aceite} aoMudar={setAceite} pedirResponsavel={papel === 'aluno' && menorDeIdade(campos.nascimento)} />
 
         {erro && <div className="erro-form">{erro}</div>}
         <button className="botao rosa grande largo" disabled={enviando}>

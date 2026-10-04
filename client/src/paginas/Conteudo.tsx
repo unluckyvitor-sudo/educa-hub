@@ -170,7 +170,7 @@ export function Conteudo() {
   const [questao, setQuestao] = useState<QuestaoDoEditor | 'nova' | null>(null);
   const [editandoTopico, setEditandoTopico] = useState(false);
 
-  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} /></div>;
+  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} aoTentar={recarregar} /></div>;
   if (!dados) return <div className="pagina"><Carregando /></div>;
   const { topico, questoes } = dados;
   const voltar = `/biblioteca?serie=${topico.serie}`;

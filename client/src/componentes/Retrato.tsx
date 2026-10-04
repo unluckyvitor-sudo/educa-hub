@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { AvatarConfig } from '../gato/modelo';
-import { chaveDoAvatar, pedirRetrato, retratoPronto } from '../gato/cena';
+import { chaveDoAvatar, type AvatarConfig } from '../gato/avatar';
+import { pedirRetrato, retratoPronto } from '../gato/retratos';
 import { fundoDoAvatar } from '../visual';
 
 interface Props {

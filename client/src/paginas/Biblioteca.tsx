@@ -84,7 +84,7 @@ export function Biblioteca() {
   const serie = parametros.get('serie') ?? 'F6';
   const [novoEm, setNovoEm] = useState<{ id: string; nome: string } | null>(null);
   const { dados: catalogo } = useCarregar(() => (aluno ? Promise.resolve(null) : api<Catalogo>('/catalogo')));
-  const { dados, erro } = useCarregar(() => api<Dados>(`/biblioteca${aluno ? '' : `?serie=${serie}`}`), [serie]);
+  const { dados, erro, recarregar } = useCarregar(() => api<Dados>(`/biblioteca${aluno ? '' : `?serie=${serie}`}`), [serie]);
 
   const mudar = (campo: 'q' | 'serie', valor: string) => {
     const novos = new URLSearchParams(parametros);
@@ -136,7 +136,7 @@ export function Biblioteca() {
       </div>
 
       {erro ? (
-        <ErroDeCarga erro={erro} />
+        <ErroDeCarga erro={erro} aoTentar={recarregar} />
       ) : !dados ? (
         <Carregando />
       ) : materias.length === 0 ? (

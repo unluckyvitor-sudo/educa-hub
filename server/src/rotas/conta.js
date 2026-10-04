@@ -12,6 +12,7 @@ import { estaOnline } from '../tempoReal.js';
 import { limitar, dentroDoLimite, MINUTO, HORA } from '../limites.js';
 import { registrar } from '../registro.js';
 import { filtrarTexto, temPalavraBloqueada, usuarioReservado, nomeReservado } from '../moderacao.js';
+import { lerAceite, sobreAInstalacao, VERSAO_DOS_TERMOS } from '../termos.js';
 
 const rotas = Router();
 const MOEDAS_INICIAIS = 50;
@@ -89,18 +90,22 @@ rotas.post('/auth/cadastro', limitar('cadastro', 120, HORA, 'Muitos cadastros a 
   const usuario = lerUsuario(corpo.usuario);
   const senha = lerSenha(corpo.senha);
   const d = lerDadosDePerfil(corpo, papel);
+  const responsavel = lerAceite(corpo, { papel, nascimento: d.nascimento });
 
   if (db.prepare('SELECT 1 FROM usuarios WHERE usuario = ?').get(usuario)) {
     return res.status(409).json({ erro: 'Este nome de usuário já está em uso.' });
   }
+  const agora = new Date().toISOString();
   const { lastInsertRowid } = db
     .prepare(
-      `INSERT INTO usuarios (papel, status, nome, usuario, email, senha_hash, serie, curso, instituicao, nascimento, bio, disciplinas, formacao, moedas)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO usuarios (papel, status, nome, usuario, email, senha_hash, serie, curso, instituicao, nascimento, bio, disciplinas, formacao, moedas,
+         termos_versao, termos_em, responsavel, consentimento_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       papel, papel === 'professor' ? 'pendente' : 'ativo', d.nome, usuario, d.email, await gerarHash(senha),
       d.serie, d.curso, d.instituicao, d.nascimento, d.bio, d.disciplinas, d.formacao, papel === 'aluno' ? MOEDAS_INICIAIS : 0,
+      VERSAO_DOS_TERMOS, agora, responsavel, responsavel ? agora : null,
     );
   registrar('conta.criada', { usuarioId: Number(lastInsertRowid), ip: req.ip, detalhe: papel });
   criarSessao(req, res, Number(lastInsertRowid));
@@ -142,6 +147,23 @@ rotas.get('/eu', exigirLogin, (req, res) => {
   res.json({ usuario: perfilProprio(req.usuario) });
 });
 
+// Quem responde por esta instalação e a versão dos termos (público: as páginas de termos abrem sem login).
+rotas.get('/sobre', (_req, res) => res.json(sobreAInstalacao()));
+
+// Aceite dos termos por contas que já existiam (ou depois de uma nova versão dos textos).
+rotas.post('/eu/termos', exigirLogin, limitar('termos', 20, HORA), (req, res) => {
+  const corpo = req.body ?? {};
+  const u = req.usuario;
+  const nascimento = u.papel === 'aluno' ? (u.nascimento ?? lerNascimento(corpo.nascimento)) : u.nascimento;
+  const responsavel = lerAceite(corpo, { papel: u.papel, nascimento });
+  const agora = new Date().toISOString();
+  db.prepare('UPDATE usuarios SET termos_versao = ?, termos_em = ?, nascimento = ?, responsavel = ?, consentimento_em = ? WHERE id = ?').run(
+    VERSAO_DOS_TERMOS, agora, nascimento, responsavel ?? u.responsavel ?? null, responsavel ? agora : (u.consentimento_em ?? null), u.id,
+  );
+  registrar('conta.termos', { usuarioId: u.id, ip: req.ip, detalhe: VERSAO_DOS_TERMOS });
+  res.json({ usuario: perfilProprio(buscarUsuario(u.id)) });
+});
+
 rotas.put('/eu', exigirLogin, (req, res) => {
   const d = lerDadosDePerfil(req.body ?? {}, req.usuario.papel);
   if (req.usuario.papel === 'aluno' && d.serie !== req.usuario.serie) {
@@ -153,6 +175,8 @@ rotas.put('/eu', exigirLogin, (req, res) => {
       return res.status(400).json({ erro: `Você participa da turma "${turma.nome}", que é de outro nível. Saia dela em "Minhas turmas" antes de mudar de nível.` });
     }
   }
+  // A data de nascimento do aluno define se é preciso a autorização do responsável: depois de informada, não fica em branco.
+  if (req.usuario.papel === 'aluno' && req.usuario.nascimento && !d.nascimento) d.nascimento = req.usuario.nascimento;
   db.prepare(
     `UPDATE usuarios SET nome = ?, email = ?, instituicao = ?, bio = ?, nascimento = ?, curso = ?, disciplinas = ?, formacao = ?, serie = ?
      WHERE id = ?`,

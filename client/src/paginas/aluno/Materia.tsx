@@ -51,10 +51,10 @@ function CartaoTopico({ topico, numero }: { topico: Topico; numero: number }) {
 
 export function Materia() {
   const { materiaId = '' } = useParams();
-  const { dados, erro } = useCarregar(() => api<{ materia: { id: string; nome: string }; topicos: Topico[] }>(`/materias/${materiaId}`), [materiaId]);
+  const { dados, erro, recarregar } = useCarregar(() => api<{ materia: { id: string; nome: string }; topicos: Topico[] }>(`/materias/${materiaId}`), [materiaId]);
   const cores = coresDaMateria(materiaId);
 
-  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} /></div>;
+  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} aoTentar={recarregar} /></div>;
   if (!dados) return <div className="pagina"><Carregando /></div>;
 
   const total = dados.topicos.length * 3;

@@ -94,7 +94,7 @@ export function Inicio() {
       <Saudacao nome={primeiroNome} legenda={`Turma: ${usuario.serieNome ?? '—'}`} />
       <div className="pagina">
         {erro ? (
-          <ErroDeCarga erro={erro} />
+          <ErroDeCarga erro={erro} aoTentar={recarregar} />
         ) : !dados ? (
           <Carregando />
         ) : (

@@ -2,8 +2,9 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Gato, type AvatarConfig } from './modelo';
+import { chaveDoAvatar, type Enquadramento } from './avatar';
 
-export type Enquadramento = 'corpo' | 'busto' | 'retrato';
+export { chaveDoAvatar, type Enquadramento } from './avatar';
 
 const QUADROS: Record<Enquadramento, { alvo: [number, number, number]; distancia: number }> = {
   corpo: { alvo: [0, 1.22, 0], distancia: 7.4 },
@@ -44,10 +45,6 @@ export function criarRenderizador(manterImagem = false) {
 let estudio: { r: THREE.WebGLRenderer; cena: THREE.Scene; camera: THREE.PerspectiveCamera } | null = null;
 const prontos = new Map<string, string>();
 const TAMANHO = 220;
-
-export function chaveDoAvatar(avatar: AvatarConfig) {
-  return [avatar.pelagem, avatar.roupa, avatar.cabeca, avatar.rosto, avatar.pescoco, avatar.costas, avatar.mao].join('|');
-}
 
 export function retratoPronto(avatar: AvatarConfig) {
   return prontos.get(chaveDoAvatar(avatar)) ?? null;

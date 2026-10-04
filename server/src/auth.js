@@ -5,6 +5,7 @@ import { SERIE_POR_ID } from './conteudo/index.js';
 import { AVATAR_PADRAO } from './loja.js';
 import { infoNivel, sequenciaAtual, jogouHoje } from './regras.js';
 import { limiteAtingido, contarUso, zerarLimite, MINUTO } from './limites.js';
+import { pendenciasDeTermos } from './termos.js';
 
 const scrypt = promisify(crypto.scrypt);
 const COOKIE = 'eh_sessao';
@@ -174,6 +175,9 @@ export function perfilProprio(u) {
     jogouHoje: jogouHoje(u),
     nivelInfo: infoNivel(u.xp),
     criadoEm: u.criado_em,
+    responsavel: u.responsavel ?? null,
+    // O que falta aceitar ou informar para a conta ficar em dia com os termos; null quando está tudo certo.
+    pendencias: pendenciasDeTermos(u),
   };
 }
 

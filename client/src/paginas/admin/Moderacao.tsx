@@ -37,6 +37,11 @@ const ACOES: Record<string, [string, string]> = {
   'admin.senha': ['Senha redefinida', 'rosa'],
   'admin.exclusao': ['Conta excluída', 'vermelha'],
   'admin.chamado-excluido': ['Chamado de suporte excluído', 'vermelha'],
+  'admin.copia': ['Cópia de segurança feita', ''],
+  'professor.senha': ['Professor redefiniu a senha de um aluno', 'rosa'],
+  'conta.termos': ['Aceitou os termos', 'cinza'],
+  'conteudo.publicado': ['Conteúdo publicado para todos', 'verde'],
+  'conteudo.recolhido': ['Conteúdo recolhido', 'amarela'],
 };
 
 /** Mensagens trocadas nos chats de duelo, para acompanhamento do administrador. */

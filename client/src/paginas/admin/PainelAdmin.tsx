@@ -86,7 +86,7 @@ export function PainelAdmin() {
       <Saudacao nome={usuario.nome.split(' ')[0]} legenda="Administração da plataforma" />
       <div className="pagina">
         {erro ? (
-          <ErroDeCarga erro={erro} />
+          <ErroDeCarga erro={erro} aoTentar={recarregar} />
         ) : !dados ? (
           <Carregando />
         ) : (

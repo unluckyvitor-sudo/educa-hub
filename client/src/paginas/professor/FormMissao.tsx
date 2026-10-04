@@ -22,6 +22,62 @@ interface Props {
 }
 
 const questaoVazia = (): Questao => ({ enunciado: '', alternativas: ['', '', '', ''], correta: 0, explicacao: '' });
+
+/** Prazo máximo de uma missão, em dias (o servidor confere a mesma regra). */
+const PRAZO_MAXIMO_DIAS = 60;
+
+/** Data local (AAAA-MM-DD) daqui a `dias` dias. */
+export function diaEm(dias: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Edição de uma missão já enviada: título, descrição e prazo. */
+export function EditarMissao({ missao, aoFechar, aoSalvar }: { missao: { id: number; titulo: string; descricao: string | null; fim: string }; aoFechar: () => void; aoSalvar: () => void }) {
+  const [titulo, setTitulo] = useState(missao.titulo);
+  const [descricao, setDescricao] = useState(missao.descricao ?? '');
+  const [fim, setFim] = useState(missao.fim);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const salvar = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await api(`/prof/missoes/${missao.id}`, { metodo: 'PUT', corpo: { titulo, descricao, fim } });
+      avisar('Missão atualizada.', 'sucesso');
+      aoSalvar();
+      aoFechar();
+    } catch (falha) {
+      setErro(mensagemDoErro(falha));
+    }
+  };
+
+  return (
+    <form className="coluna" style={{ gap: 14 }} onSubmit={salvar}>
+      <h2>Editar missão</h2>
+      <label className="campo">
+        <span>Título</span>
+        <input className="entrada" value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={60} required autoFocus />
+      </label>
+      <label className="campo">
+        <span>Descrição (opcional)</span>
+        <input className="entrada" value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={200} />
+      </label>
+      <label className="campo">
+        <span>Vale até</span>
+        <input className="entrada" type="date" value={fim} onChange={(e) => setFim(e.target.value)} min={fim < diaEm(0) ? fim : diaEm(0)} max={diaEm(PRAZO_MAXIMO_DIAS)} required />
+      </label>
+      <p className="pequeno suave">A meta e a recompensa não mudam depois que a turma já recebeu a missão.</p>
+      {erro && <div className="erro-form">{erro}</div>}
+      <div className="modal-acoes">
+        <button type="button" className="botao claro" onClick={aoFechar}>
+          Cancelar
+        </button>
+        <button className="botao">Salvar</button>
+      </div>
+    </form>
+  );
+}
 const LETRAS = ['A', 'B', 'C', 'D'];
 
 /** Formulário para o professor propor uma missão (meta de atividades/acertos) ou um desafio com questões próprias. */
@@ -29,7 +85,8 @@ export function FormMissao({ aberto, aoFechar, aoCriar, turmas, materias = [], t
   const [turmaId, setTurmaId] = useState(turmaFixa ?? turmas[0]?.id ?? 0);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [periodo, setPeriodo] = useState<'diaria' | 'semanal'>('semanal');
+  const [prazo, setPrazo] = useState<'hoje' | 'semana' | 'data'>('semana');
+  const [fim, setFim] = useState(diaEm(14));
   const [tipo, setTipo] = useState<'atividades' | 'acertos' | 'quiz'>('atividades');
   const [materia, setMateria] = useState('');
   const [meta, setMeta] = useState(3);
@@ -47,7 +104,10 @@ export function FormMissao({ aberto, aoFechar, aoCriar, turmas, materias = [], t
     setEnviando(true);
     try {
       await api('/prof/missoes', {
-        corpo: { turmaId: turmaFixa ?? turmaId, titulo, descricao, periodo, tipo, materia: materia || null, meta, xp, moedas, questoes: tipo === 'quiz' ? questoes : undefined },
+        corpo: {
+          turmaId: turmaFixa ?? turmaId, titulo, descricao, tipo, materia: materia || null, meta, xp, moedas, questoes: tipo === 'quiz' ? questoes : undefined,
+          ...(prazo === 'data' ? { fim } : { periodo: prazo === 'hoje' ? 'diaria' : 'semanal' }),
+        },
       });
       avisar('Missão enviada para a turma!', 'sucesso');
       setTitulo('');
@@ -97,13 +157,17 @@ export function FormMissao({ aberto, aoFechar, aoCriar, turmas, materias = [], t
           <div className="campo">
             <span>Prazo</span>
             <div className="chips">
-              <button type="button" className={`chip ${periodo === 'diaria' ? 'ativo' : ''}`} onClick={() => setPeriodo('diaria')}>
-                Diária (vale hoje)
+              <button type="button" className={`chip ${prazo === 'hoje' ? 'ativo' : ''}`} onClick={() => setPrazo('hoje')}>
+                Só hoje
               </button>
-              <button type="button" className={`chip ${periodo === 'semanal' ? 'ativo' : ''}`} onClick={() => setPeriodo('semanal')}>
-                Semanal (7 dias)
+              <button type="button" className={`chip ${prazo === 'semana' ? 'ativo' : ''}`} onClick={() => setPrazo('semana')}>
+                7 dias
+              </button>
+              <button type="button" className={`chip ${prazo === 'data' ? 'ativo' : ''}`} onClick={() => setPrazo('data')}>
+                Outra data
               </button>
             </div>
+            {prazo === 'data' && <input className="entrada" type="date" value={fim} onChange={(e) => setFim(e.target.value)} min={diaEm(0)} max={diaEm(PRAZO_MAXIMO_DIAS)} aria-label="Último dia da missão" required />}
           </div>
           <div className="campo">
             <span>O que o aluno deve fazer</span>

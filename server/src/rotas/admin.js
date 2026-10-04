@@ -12,6 +12,7 @@ import { buscarUsuario } from '../consultas.js';
 import { estaOnline, totalOnline, notificar, desconectarUsuario } from '../tempoReal.js';
 import { fazerCopia, resumoDasCopias } from '../copias.js';
 import { limitar, HORA } from '../limites.js';
+import { sobreAInstalacao } from '../termos.js';
 
 const rotas = Router();
 rotas.use(exigirPapel('admin'));
@@ -40,6 +41,9 @@ async function avisosDeSeguranca() {
   }
   if (fs.existsSync(path.join(PASTA_DADOS, 'contas-demo.txt')) && db.prepare("SELECT 1 FROM usuarios WHERE usuario = 'prof.marina'").get()) {
     avisos.push('As contas de demonstração estão ativas e todas usam a mesma senha. Exclua-as antes de abrir a plataforma para alunos de verdade.');
+  }
+  if (!sobreAInstalacao().responsavel) {
+    avisos.push('Os Termos de uso e a Política de privacidade ainda não dizem quem responde por esta instalação. Defina as variáveis EDUCAHUB_RESPONSAVEL e EDUCAHUB_CONTATO e revise os textos: eles são um modelo, não substituem orientação jurídica.');
   }
   avisosEmCache = { ate: Date.now() + 60 * 1000, avisos };
   return avisos;

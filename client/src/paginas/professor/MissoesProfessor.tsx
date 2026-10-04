@@ -34,7 +34,7 @@ export function MissoesProfessor() {
       </div>
 
       {erro ? (
-        <ErroDeCarga erro={erro} />
+        <ErroDeCarga erro={erro} aoTentar={recarregar} />
       ) : !dados ? (
         <Carregando />
       ) : dados.turmas.length === 0 ? (

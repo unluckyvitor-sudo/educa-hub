@@ -158,6 +158,7 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
   const atualizarUsuario = useEstado((e) => e.atualizarUsuario);
   const [partida, setPartida] = useState<Partida | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [falhaAoTerminar, setFalhaAoTerminar] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoJogo | null>(null);
   const [humor, setHumor] = useState<Animacao>('acenar');
   const [rodada, setRodada] = useState(0);
@@ -168,6 +169,7 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
     setPartida(null);
     setResultado(null);
     setErro(null);
+    setFalhaAoTerminar(null);
     setHumor('acenar');
     api<Partida>('/jogos/iniciar', { corpo: revisao ? { revisao: true } : missaoId ? { missaoId: Number(missaoId) } : { topicoId, modo } })
       .then((p) => ativo && setPartida(p))
@@ -187,6 +189,7 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
 
   const terminar = useCallback(async () => {
     if (!partida) return;
+    setFalhaAoTerminar(null);
     try {
       const r = await api<ResultadoJogo>(`/jogos/${partida.partida}/finalizar`, { metodo: 'POST' });
       window.clearTimeout(relogio.current);
@@ -197,7 +200,8 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
       if (bom) soltarConfete();
       void atualizarUsuario();
     } catch (e) {
-      setErro(mensagemDoErro(e));
+      // As respostas já estão no servidor: basta pedir o resultado de novo, sem refazer o jogo.
+      setFalhaAoTerminar(mensagemDoErro(e));
     }
   }, [partida, atualizarUsuario]);
 
@@ -206,10 +210,16 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
   const cores = coresDaMateria(partida?.materia);
   const estilo = { '--claro': cores.claro, '--claro2': cores.claro2, '--forte': cores.forte } as CSSProperties;
 
+  const sair = () => {
+    const emAndamento = !!partida && !resultado && !erro;
+    if (emAndamento && !window.confirm('Sair do jogo agora? O que você respondeu nesta partida não será contado.')) return;
+    navegar(voltarPara);
+  };
+
   return (
     <div className="jogo" style={estilo}>
       <header className="jogo-topo">
-        <button className="botao-icone" onClick={() => navegar(voltarPara)} aria-label="Sair do jogo" title="Sair do jogo">
+        <button className="botao-icone" onClick={sair} aria-label="Sair do jogo" title="Sair do jogo">
           <Icone nome="x" />
         </button>
         <div className="cresce">
@@ -235,6 +245,14 @@ export function Jogar({ revisao = false }: { revisao?: boolean }) {
               <Link className="botao" to={voltarPara}>
                 Voltar
               </Link>
+            </div>
+          ) : falhaAoTerminar && !resultado ? (
+            <div className="resultado">
+              <h1>Quase lá!</h1>
+              <p className="subtitulo">Suas respostas estão guardadas, mas o resultado não chegou: {falhaAoTerminar}</p>
+              <button className="botao" onClick={() => void terminar()}>
+                <Icone nome="atualizar" tamanho={18} /> Tentar de novo
+              </button>
             </div>
           ) : !partida ? (
             <Carregando texto="Embaralhando as questões..." />

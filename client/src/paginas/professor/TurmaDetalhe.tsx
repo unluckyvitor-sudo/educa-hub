@@ -4,12 +4,12 @@ import { api, mensagemDoErro } from '../../api';
 import { avisar, useEstado } from '../../estado';
 import { EVENTO_PRESENCA } from '../../tempoReal';
 import { formatarDia, haQuantoTempo } from '../../visual';
-import { Carregando, ErroDeCarga, Vazio, useCarregar } from '../../componentes/comuns';
+import { Carregando, ErroDeCarga, Modal, Vazio, useCarregar } from '../../componentes/comuns';
 import { ListaRanking, Recompensa } from '../../componentes/Gamificacao';
 import { Icone, Chama } from '../../componentes/Icone';
 import { Retrato } from '../../componentes/Retrato';
 import { ListaDeAtividades } from '../../componentes/VisaoProgresso';
-import { FormMissao } from './FormMissao';
+import { EditarMissao, FormMissao } from './FormMissao';
 import { FormAoVivo } from '../AoVivo';
 import { useAoVivo } from '../../aoVivo';
 import { copiarCodigo } from './Turmas';
@@ -71,6 +71,7 @@ function Dificuldades({ turmaId }: { turmaId: number }) {
 const TIPOS: Record<MissaoProfessor['tipo'], string> = { atividades: 'atividades', acertos: 'acertos', quiz: 'Quiz' };
 
 export function CartaoMissaoProfessor({ missao, aoExcluir }: { missao: MissaoProfessor; aoExcluir: () => void }) {
+  const [editando, setEditando] = useState(false);
   const excluir = async () => {
     if (!window.confirm(`Excluir a missão "${missao.titulo}"?`)) return;
     try {
@@ -109,10 +110,18 @@ export function CartaoMissaoProfessor({ missao, aoExcluir }: { missao: MissaoPro
       </div>
       <div className="missao-lado">
         <Recompensa xp={missao.xp} moedas={missao.moedas} />
-        <button className="botao-icone" onClick={excluir} aria-label={`Excluir missão ${missao.titulo}`} title="Excluir missão">
-          <Icone nome="lixeira" tamanho={18} />
-        </button>
+        <div className="linha" style={{ gap: 2 }}>
+          <button className="botao-icone" onClick={() => setEditando(true)} aria-label={`Editar missão ${missao.titulo}`} title="Editar título, descrição e prazo">
+            <Icone nome="editar" tamanho={18} />
+          </button>
+          <button className="botao-icone" onClick={excluir} aria-label={`Excluir missão ${missao.titulo}`} title="Excluir missão">
+            <Icone nome="lixeira" tamanho={18} />
+          </button>
+        </div>
       </div>
+      <Modal aberto={editando} aoFechar={() => setEditando(false)}>
+        {editando && <EditarMissao missao={missao} aoFechar={() => setEditando(false)} aoSalvar={aoExcluir} />}
+      </Modal>
     </div>
   );
 }

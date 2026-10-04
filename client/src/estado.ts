@@ -1,6 +1,6 @@
 // Estado global: sessão do usuário, avisos na tela e notificações.
 import { create } from 'zustand';
-import { api } from './api';
+import { api, definirAoPerderSessao } from './api';
 import type { Notificacao, ResumoSuporte, Usuario } from './tipos';
 
 export interface Aviso {
@@ -99,3 +99,11 @@ export const useEstado = create<Estado>((set, get) => ({
 }));
 
 export const avisar = (texto: string, tipo?: Aviso['tipo']) => useEstado.getState().avisar(texto, tipo);
+
+// Sessão encerrada no servidor: volta para a tela de entrada em vez de mostrar erros em cada página.
+definirAoPerderSessao(() => {
+  const { usuario, definirUsuario } = useEstado.getState();
+  if (!usuario) return;
+  definirUsuario(null);
+  avisar('Sua sessão terminou. Entre de novo para continuar.');
+});

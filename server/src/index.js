@@ -10,6 +10,7 @@ import { iniciarTempoReal } from './tempoReal.js';
 import { limitar, MINUTO, HORA } from './limites.js';
 import { limparRegistrosAntigos } from './registro.js';
 import { copiaDiaria } from './copias.js';
+import { servirCliente } from './estaticos.js';
 import rotasConta from './rotas/conta.js';
 import rotasAprender from './rotas/aprender.js';
 import rotasSocial from './rotas/social.js';
@@ -22,9 +23,19 @@ import rotasAoVivo from './rotas/aoVivo.js';
 const PORTA = Number(process.env.PORT) || 3001;
 const PASTA_CLIENTE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'client', 'dist');
 
-/** Na primeira execução, cria a conta de administrador com uma senha aleatória gravada em arquivo local. */
+/**
+ * Na primeira execução, cria a conta de administrador. Em uma hospedagem, a senha inicial vem da variável
+ * EDUCAHUB_ADMIN_SENHA (lá não dá para abrir um arquivo no servidor); sem ela, é sorteada e gravada em arquivo local.
+ */
 async function garantirAdministrador() {
   if (db.prepare("SELECT 1 FROM usuarios WHERE papel = 'admin'").get()) return;
+  const definida = process.env.EDUCAHUB_ADMIN_SENHA;
+  if (definida) {
+    if (definida.length < 10) throw new Error('EDUCAHUB_ADMIN_SENHA precisa ter pelo menos 10 caracteres.');
+    db.prepare("INSERT INTO usuarios (papel, nome, usuario, senha_hash) VALUES ('admin', 'Administrador', 'admin', ?)").run(await gerarHash(definida));
+    console.log('Conta de administrador criada com a senha de EDUCAHUB_ADMIN_SENHA. Troque-a em Configurações depois do primeiro acesso.');
+    return;
+  }
   const senha = crypto.randomBytes(9).toString('base64url');
   db.prepare("INSERT INTO usuarios (papel, nome, usuario, senha_hash) VALUES ('admin', 'Administrador', 'admin', ?)").run(await gerarHash(senha));
   const arquivo = path.join(PASTA_DADOS, 'admin-inicial.txt');
@@ -37,7 +48,9 @@ async function garantirAdministrador() {
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 'loopback');
+// Atrás do proxy de uma hospedagem (que termina o HTTPS e repassa o IP de quem acessa), defina EDUCAHUB_PROXY=1:
+// sem isso o servidor não saberia que a conexão é segura nem distinguiria um visitante do outro.
+app.set('trust proxy', Number(process.env.EDUCAHUB_PROXY) || process.env.EDUCAHUB_PROXY || 'loopback');
 
 // Só o próprio site pode carregar scripts, estilos e conexões; nada de fora roda nas páginas da plataforma.
 const POLITICA_DE_CONTEUDO = [
@@ -85,10 +98,7 @@ app.use('/api/aovivo', rotasAoVivo);
 app.use('/api/admin', rotasAdmin);
 app.use('/api', (_req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));
 
-if (fs.existsSync(PASTA_CLIENTE)) {
-  app.use(express.static(PASTA_CLIENTE));
-  app.get('/{*caminho}', (_req, res) => res.sendFile(path.join(PASTA_CLIENTE, 'index.html')));
-}
+if (fs.existsSync(PASTA_CLIENTE)) servirCliente(app, PASTA_CLIENTE);
 
 app.use((erro, _req, res, _proximo) => {
   if (erro instanceof ErroDeEntrada) return res.status(400).json({ erro: erro.message });

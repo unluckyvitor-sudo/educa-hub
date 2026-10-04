@@ -59,7 +59,7 @@ function Caderno() {
 }
 
 export function MeuProgresso() {
-  const { dados, erro } = useCarregar(() => api<Progresso>('/progresso'));
+  const { dados, erro, recarregar } = useCarregar(() => api<Progresso>('/progresso'));
   return (
     <div className="pagina">
       <div className="pagina-cabecalho">
@@ -69,7 +69,7 @@ export function MeuProgresso() {
         </div>
       </div>
       {erro ? (
-        <ErroDeCarga erro={erro} />
+        <ErroDeCarga erro={erro} aoTentar={recarregar} />
       ) : !dados ? (
         <Carregando />
       ) : (

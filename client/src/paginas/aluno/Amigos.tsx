@@ -147,7 +147,7 @@ export function Amigos() {
             {dados && <span className="etiqueta acao">{dados.amigos.filter((a) => a.online).length} online</span>}
           </div>
           {erro ? (
-            <ErroDeCarga erro={erro} />
+            <ErroDeCarga erro={erro} aoTentar={recarregar} />
           ) : !dados ? (
             <Carregando />
           ) : dados.amigos.length === 0 ? (

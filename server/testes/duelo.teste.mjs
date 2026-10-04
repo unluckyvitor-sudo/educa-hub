@@ -96,6 +96,49 @@ const abandono = await fimPorAbandono;
 verificar(abandono.abandono && abandono.desfecho === 'vitoria', 'vitória por abandono do oponente');
 verificar(abandono.recompensa.xp === 0 && abandono.recompensa.moedas === 0 && abandono.sequencia === null, 'abandono antes da primeira pergunta não rende recompensa nem conta o dia');
 
+// ── Queda de conexão ──
+const parear = async () => {
+  const inicios = [esperar(bruno.socket, 'duelo:inicio'), esperar(carla.socket, 'duelo:inicio')];
+  bruno.socket.emit('duelo:buscar', { materia: null });
+  carla.socket.emit('duelo:buscar', { materia: null });
+  await Promise.all(inicios);
+  return esperar(bruno.socket, 'duelo:pergunta'); // a primeira pergunta chega alguns segundos depois do início
+};
+const reconectar = () => {
+  carla.socket = io(BASE, { extraHeaders: { cookie: carla.cookie }, transports: ['websocket'] });
+  return carla.socket;
+};
+
+// Carla cai no meio da pergunta e volta: o duelo continua de onde estava.
+await (await parear());
+const ausente = esperar(bruno.socket, 'duelo:oponenteAusente');
+carla.socket.close();
+verificar((await ausente).segundos > 0, 'quando a conexão de Carla cai, Bruno é avisado e o duelo não acaba');
+const voltou = esperar(bruno.socket, 'duelo:oponenteVoltou');
+const retomada = await esperar(reconectar(), 'duelo:retomar');
+verificar(
+  retomada.info.oponente.id === bruno.id && retomada.pergunta?.indice === 0 && retomada.pergunta.decorridoMs > 0 && retomada.pergunta.correta === undefined,
+  'ao voltar, Carla recebe o duelo na pergunta em andamento (sem o gabarito)',
+);
+await voltou;
+verificar(true, 'Bruno é avisado de que ela voltou');
+const resultadoDepois = esperar(carla.socket, 'duelo:resultado');
+bruno.socket.emit('duelo:responder', { indice: 0, resposta: 0 });
+carla.socket.emit('duelo:responder', { indice: 0, resposta: 1 });
+verificar((await resultadoDepois).placar.length === 2, 'o duelo segue normalmente depois da volta');
+const fimDoRetomado = esperar(bruno.socket, 'duelo:fim');
+carla.socket.emit('duelo:sair');
+await fimDoRetomado;
+
+// Carla cai e não volta: depois do prazo de tolerância, conta como abandono.
+await (await parear());
+const fimPorAusencia = esperar(bruno.socket, 'duelo:fim', 45000);
+const desde = Date.now();
+carla.socket.close();
+const ausencia = await fimPorAusencia;
+verificar(ausencia.abandono && ausencia.desfecho === 'vitoria' && Date.now() - desde > 5000, `quem não volta dentro do prazo perde por abandono (${Math.round((Date.now() - desde) / 1000)} s depois)`);
+verificar((await esperar(reconectar(), 'duelo:nenhum')) !== undefined, 'quem volta tarde demais é avisado de que não há mais duelo');
+
 bruno.socket.close();
 carla.socket.close();
 console.log('\nTodos os testes de duelo passaram.');

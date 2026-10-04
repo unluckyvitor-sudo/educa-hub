@@ -50,7 +50,7 @@ export function Perfil() {
   const eu = useEstado((e) => e.usuario)!;
   const { dados, erro, recarregar } = useCarregar(() => api<{ perfil: PerfilPublico }>(`/usuarios/${usuarioId}`), [usuarioId]);
 
-  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} /></div>;
+  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} aoTentar={recarregar} /></div>;
   if (!dados) return <div className="pagina"><Carregando /></div>;
   const p = dados.perfil;
 

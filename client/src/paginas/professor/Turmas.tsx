@@ -66,7 +66,7 @@ function NovaTurma({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void
 }
 
 export function Turmas() {
-  const { dados, erro } = useCarregar(() => api<{ turmas: Turma[] }>('/prof/turmas'));
+  const { dados, erro, recarregar } = useCarregar(() => api<{ turmas: Turma[] }>('/prof/turmas'));
   const [criando, setCriando] = useState(false);
 
   return (
@@ -84,7 +84,7 @@ export function Turmas() {
       </div>
 
       {erro ? (
-        <ErroDeCarga erro={erro} />
+        <ErroDeCarga erro={erro} aoTentar={recarregar} />
       ) : !dados ? (
         <Carregando />
       ) : dados.turmas.length === 0 ? (

@@ -2,12 +2,13 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import { db, diaLocal, diasAtras, inicioDaSemana } from '../db.js';
-import { exigirPapel, resumoPublico, texto, inteiro, ErroDeEntrada } from '../auth.js';
+import { exigirPapel, resumoPublico, texto, inteiro, gerarHash, encerrarSessoesDoUsuario, ErroDeEntrada } from '../auth.js';
 import { MATERIAS, SERIE_POR_ID, serieValida, materiasDaSerie } from '../conteudo/index.js';
 import { tituloDaAtividade, dificuldadesDe } from '../acervo.js';
 import { andamentoNaMissao, LIMITE_RECOMPENSA_PROFESSOR } from '../regras.js';
 import { buscarUsuario, professorDoAluno, estatisticasDoAluno } from '../consultas.js';
-import { estaOnline, notificar } from '../tempoReal.js';
+import { estaOnline, notificar, desconectarUsuario } from '../tempoReal.js';
+import { registrar } from '../registro.js';
 import { montarRanking } from './social.js';
 import { limitar, HORA } from '../limites.js';
 import { progressoDoAluno } from './aprender.js';
@@ -193,7 +194,35 @@ rotas.get('/alunos/:id', (req, res) => {
   });
 });
 
+// Aluno que esqueceu a senha: o professor da turma gera uma senha temporária e entrega a ele.
+rotas.post('/alunos/:id/senha', limitar('senha-de-aluno', 20, HORA, 'Muitas senhas redefinidas em pouco tempo. Aguarde um pouco.'), async (req, res) => {
+  const aluno = buscarUsuario(Number(req.params.id));
+  const permitido = aluno && aluno.papel === 'aluno' && (req.usuario.papel === 'admin' || professorDoAluno(req.usuario.id, aluno.id));
+  if (!permitido) return res.status(404).json({ erro: 'Aluno não encontrado nas suas turmas.' });
+  // 8 caracteres de um alfabeto de 32 (sem letras e números que se confundem ao ditar): 40 bits.
+  const senhaTemporaria = Array.from(crypto.randomBytes(8), (b) => ALFABETO_CODIGO[b % ALFABETO_CODIGO.length]).join('');
+  db.prepare('UPDATE usuarios SET senha_hash = ? WHERE id = ?').run(await gerarHash(senhaTemporaria), aluno.id);
+  encerrarSessoesDoUsuario(aluno.id);
+  desconectarUsuario(aluno.id);
+  registrar('professor.senha', { usuarioId: req.usuario.id, alvoId: aluno.id, ip: req.ip });
+  notificar(aluno.id, { tipo: 'conta', texto: `Sua senha foi redefinida por ${req.usuario.nome}. Troque por uma só sua em Configurações.`, link: '/configuracoes' });
+  res.json({ senhaTemporaria });
+});
+
 // ───────────── Missões ─────────────
+
+const PRAZO_MAXIMO_DIAS = 60;
+
+/** Último dia de uma missão: uma data escolhida pelo professor ou os atalhos "hoje" e "7 dias". */
+function lerPrazo(corpo, hoje) {
+  if (corpo.fim == null || corpo.fim === '') return corpo.periodo === 'semanal' ? diasAtras(-6) : hoje;
+  const fim = String(corpo.fim);
+  const existe = /^\d{4}-\d{2}-\d{2}$/.test(fim) && diaLocal(new Date(`${fim}T12:00:00`)) === fim;
+  if (!existe || fim < hoje || fim > diasAtras(-PRAZO_MAXIMO_DIAS)) {
+    throw new ErroDeEntrada(`O prazo precisa ser uma data entre hoje e ${PRAZO_MAXIMO_DIAS} dias à frente.`);
+  }
+  return fim;
+}
 
 function formatarMissao(m) {
   return {
@@ -262,11 +291,11 @@ rotas.post('/missoes', limitar('missao', 30, HORA), (req, res) => {
   }
   const tipo = ['atividades', 'acertos', 'quiz'].includes(corpo.tipo) ? corpo.tipo : null;
   if (!tipo) throw new ErroDeEntrada('Tipo de missão inválido.');
-  const periodo = corpo.periodo === 'semanal' ? 'semanal' : 'diaria';
+  const hoje = diaLocal();
+  const fim = lerPrazo(corpo, hoje);
+  const periodo = fim === hoje ? 'diaria' : 'semanal'; // só o rótulo; o que vale é a data do prazo
   const materia = corpo.materia && materiasDaSerie(turma.serie).some((m) => m.id === corpo.materia) ? corpo.materia : null;
   const questoes = tipo === 'quiz' ? lerQuestoes(corpo.questoes) : null;
-  const hoje = diaLocal();
-  const fim = periodo === 'diaria' ? hoje : diasAtras(-6);
 
   const { lastInsertRowid } = db
     .prepare(
@@ -289,6 +318,26 @@ rotas.post('/missoes', limitar('missao', 30, HORA), (req, res) => {
     notificar(m.id, { tipo: 'missao', texto: `Nova missão de ${req.usuario.nome}: ${missao.titulo}`, link: '/desafios' });
   }
   res.status(201).json({ missao: formatarMissao(missao) });
+});
+
+// Edição: título, descrição e prazo (a meta e a recompensa não mudam depois que os alunos já viram a missão).
+rotas.put('/missoes/:missaoId', (req, res) => {
+  const missao = db.prepare('SELECT * FROM missoes WHERE id = ?').get(Number(req.params.missaoId));
+  if (!missao || (missao.professor_id !== req.usuario.id && req.usuario.papel !== 'admin')) {
+    return res.status(404).json({ erro: 'Missão não encontrada.' });
+  }
+  const hoje = diaLocal();
+  const corpo = req.body ?? {};
+  // Quem só corrige o título de uma missão já encerrada não precisa mexer no prazo.
+  const fim = corpo.fim == null || corpo.fim === missao.fim ? missao.fim : lerPrazo({ fim: corpo.fim }, hoje);
+  db.prepare('UPDATE missoes SET titulo = ?, descricao = ?, fim = ?, periodo = ? WHERE id = ?').run(
+    texto(corpo.titulo, 'Título', { min: 3, max: 60 }),
+    texto(corpo.descricao, 'Descrição', { max: 200, opcional: true }),
+    fim,
+    fim === missao.inicio ? 'diaria' : 'semanal',
+    missao.id,
+  );
+  res.json({ missao: formatarMissao(db.prepare('SELECT * FROM missoes WHERE id = ?').get(missao.id)) });
 });
 
 rotas.delete('/missoes/:missaoId', (req, res) => {

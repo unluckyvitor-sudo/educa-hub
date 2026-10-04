@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GatoVivo } from '../gato/GatoVivo';
-import { AVATAR_PADRAO, type Animacao } from '../gato/modelo';
+import { AVATAR_PADRAO, type Animacao } from '../gato/avatar';
 import { Coroa } from './Rabiscos';
 
 const REACOES: { animacao: Animacao; fala: string }[] = [

@@ -69,6 +69,15 @@ interface EstadoDuelo {
   encerrar: () => void;
 }
 
+/** O que o servidor manda para quem volta a um duelo em andamento. */
+interface Retomada {
+  info: NonNullable<EstadoDuelo['info']>;
+  pontos: Record<number, number>;
+  pergunta: (Omit<PerguntaDuelo, 'recebidaEm'> & { decorridoMs: number }) | null;
+  minhaResposta: number | null;
+  oponenteRespondeu: boolean;
+}
+
 let socket: Socket | null = null;
 const emitir = (evento: string, dados: unknown = {}) => socket?.emit(evento, dados);
 
@@ -179,6 +188,31 @@ export function conectarTempoReal() {
   });
   socket.on('duelo:chat', (m: { de: number; texto: string }) => duelo.setState({ mensagens: [...duelo.getState().mensagens, m].slice(-40) }));
   socket.on('duelo:emote', (e: { de: number; emote: string }) => duelo.setState({ emote: { ...e, n: Date.now() } }));
+
+  // Queda de conexão ou página recarregada: ao conectar, o servidor manda o duelo em andamento (ou avisa que não há).
+  socket.on('duelo:retomar', (r: Retomada) => {
+    duelo.setState({
+      ...INICIAL,
+      convite: null,
+      info: r.info,
+      pontos: r.pontos,
+      fase: r.pergunta ? 'pergunta' : 'inicio', // entre duas perguntas, a próxima chega em instantes
+      pergunta: r.pergunta ? { ...r.pergunta, recebidaEm: Date.now() - r.pergunta.decorridoMs } : null,
+      minhaResposta: r.minhaResposta,
+      oponenteRespondeu: r.oponenteRespondeu,
+    });
+  });
+  socket.on('duelo:nenhum', () => {
+    const { fase } = duelo.getState();
+    if (fase === 'ocioso' || fase === 'fim') return;
+    avisar(fase === 'buscando' || fase === 'convidando' ? 'A conexão caiu e a busca pelo duelo foi interrompida. Tente de novo.' : 'O duelo terminou enquanto você estava sem conexão.');
+    duelo.setState({ ...INICIAL });
+  });
+  socket.on('duelo:oponenteAusente', ({ segundos }: { segundos: number }) => avisar(`Seu oponente perdeu a conexão. O duelo continua e ele tem ${segundos} segundos para voltar.`));
+  socket.on('duelo:oponenteVoltou', () => avisar('Seu oponente voltou!', 'sucesso'));
+  socket.on('disconnect', () => {
+    if (['inicio', 'pergunta', 'resultado'].includes(duelo.getState().fase)) avisar('A conexão caiu. Tentando voltar ao duelo...', 'erro');
+  });
 }
 
 export function desconectarTempoReal() {

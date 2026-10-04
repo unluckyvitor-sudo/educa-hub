@@ -5,6 +5,7 @@ import path from 'node:path';
 import { db, PASTA_DADOS, diaLocal, diasAtras, transacao } from './db.js';
 import { gerarHash } from './auth.js';
 import { materiasDaSerie, MODOS } from './conteudo/index.js';
+import { VERSAO_DOS_TERMOS } from './termos.js';
 import { AVATAR_PADRAO, ITEM_POR_ID } from './loja.js';
 
 const CONTAS_DEMO = ['prof.marina', 'prof.carlos', 'ana', 'bruno', 'carla', 'diego', 'elisa', 'felipe', 'gabi', 'heitor', 'lucas', 'julia'];
@@ -41,8 +42,13 @@ const ids = {};
 
 transacao(() => {
   const inserirUsuario = db.prepare(
-    `INSERT INTO usuarios (papel, status, nome, usuario, senha_hash, serie, instituicao, disciplinas, formacao, bio, moedas, avatar_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO usuarios (papel, status, nome, usuario, senha_hash, serie, instituicao, disciplinas, formacao, bio, moedas, avatar_json,
+       nascimento, termos_versao, termos_em, responsavel, consentimento_em)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+       CASE WHEN ?1 = 'aluno' THEN (CASE WHEN ?6 LIKE 'U%' THEN '2004-03-15' WHEN ?6 LIKE 'M%' THEN '2009-03-15' ELSE '2014-03-15' END) END,
+       '${VERSAO_DOS_TERMOS}', datetime('now'),
+       CASE WHEN ?1 = 'aluno' AND ?6 NOT LIKE 'U%' THEN 'Responsável de demonstração' END,
+       CASE WHEN ?1 = 'aluno' AND ?6 NOT LIKE 'U%' THEN datetime('now') END)`, // dados fictícios: as contas de demonstração já nascem em dia com os termos
   );
   const novo = (...campos) => Number(inserirUsuario.run(...campos).lastInsertRowid);
 

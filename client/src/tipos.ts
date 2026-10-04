@@ -40,6 +40,10 @@ export interface Usuario extends ResumoUsuario {
   jogouHoje: boolean;
   nivelInfo: NivelInfo;
   criadoEm: string;
+  /** Responsável que autorizou o uso (alunos menores de idade). */
+  responsavel: string | null;
+  /** O que falta aceitar ou informar para a conta ficar em dia com os termos; null quando está tudo certo. */
+  pendencias: { termos: boolean; nascimento: boolean; responsavel: boolean } | null;
 }
 
 export interface Catalogo {

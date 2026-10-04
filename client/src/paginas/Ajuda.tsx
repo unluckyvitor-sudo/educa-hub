@@ -5,7 +5,7 @@ import { api, mensagemDoErro } from '../api';
 import { avisar, useEstado } from '../estado';
 import { EVENTO_SUPORTE } from '../tempoReal';
 import { GatoVivo } from '../gato/GatoVivo';
-import { AVATAR_PADRAO } from '../gato/modelo';
+import { AVATAR_PADRAO } from '../gato/avatar';
 import { Carregando, ErroDeCarga, Modal, Vazio, useCarregar } from '../componentes/comuns';
 import { Icone } from '../componentes/Icone';
 import { Estrelas, LinhaChamado } from '../componentes/Suporte';
@@ -36,7 +36,7 @@ const PERGUNTAS: Record<'aluno' | 'professor', Pergunta[]> = {
     { pergunta: 'Como os alunos entram na turma?', resposta: 'Cada aluno abre Configurações › "Minhas turmas" e digita o código. Só entram alunos cujo perfil está no mesmo nível de ensino da turma. Você pode gerar um código novo a qualquer momento, e o antigo deixa de valer.' },
     { pergunta: 'Como proponho missões e desafios?', resposta: 'Em "Missões", crie uma missão diária ou semanal com meta de atividades ou de acertos, ou um quiz com as suas próprias questões. Cada missão dá até 300 XP e 200 moedas, e cada turma pode ter até 12 missões ativas.' },
     { pergunta: 'Como acompanho o desempenho dos alunos?', resposta: 'O painel inicial mostra quem está online, os destaques da semana e as atividades recentes. Dentro de cada turma há o ranking, as missões e, clicando em um aluno, o progresso dele por matéria.' },
-    { pergunta: 'Um aluno esqueceu a senha. O que eu faço?', resposta: 'Abra um chamado em "Minha conta e acesso" informando o nome de usuário do aluno. A administração gera uma senha temporária para você entregar a ele.' },
+    { pergunta: 'Um aluno esqueceu a senha. O que eu faço?', resposta: 'Abra a turma, clique no aluno e use "Redefinir senha": a plataforma gera uma senha temporária para você entregar a ele. Peça que ele troque por uma só dele em Configurações.' },
     { pergunta: 'Onde vejo as dúvidas que os alunos me enviam?', resposta: 'No menu "Dúvidas dos alunos". Os alunos das suas turmas podem escolher você como destinatário ao pedir ajuda. A administração da plataforma pode acompanhar essas conversas.' },
     { pergunta: 'Minha conta ainda aguarda aprovação. Quanto tempo leva?', resposta: 'A administração confere os dados de cada professor antes de liberar o acesso. Se estiver demorando, abra um chamado em "Minha conta e acesso" e informe a sua instituição.' },
     { pergunta: 'Posso jogar as atividades?', resposta: 'Pode, na Biblioteca e nos tópicos, para conhecer o conteúdo que os alunos veem. As suas partidas não contam pontos nem entram nos rankings.' },

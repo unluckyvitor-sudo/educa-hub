@@ -42,7 +42,7 @@ export function PainelProfessor() {
       <Saudacao nome={usuario.nome.split(' ')[0]} legenda={usuario.disciplinas ? `Professor(a) de ${usuario.disciplinas}` : 'Painel do professor'} />
       <div className="pagina">
         {erro ? (
-          <ErroDeCarga erro={erro} />
+          <ErroDeCarga erro={erro} aoTentar={recarregar} />
         ) : !dados ? (
           <Carregando />
         ) : (

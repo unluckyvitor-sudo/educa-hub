@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, mensagemDoErro } from '../api';
 import { useEstado } from '../estado';
 import { GatoVivo } from '../gato/GatoVivo';
-import { AVATAR_PADRAO, type Animacao } from '../gato/modelo';
+import { AVATAR_PADRAO, type Animacao } from '../gato/avatar';
 import { Logo } from '../componentes/Logo';
 import { Coroa, Coracao, EstrelaRabisco, Seta } from '../componentes/Rabiscos';
 import type { Papel, Usuario } from '../tipos';

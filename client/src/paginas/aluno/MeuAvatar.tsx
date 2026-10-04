@@ -67,7 +67,7 @@ export function MeuAvatar() {
     animar('surpreso', 1200);
   };
 
-  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} /></div>;
+  if (erro) return <div className="pagina"><ErroDeCarga erro={erro} aoTentar={recarregar} /></div>;
   if (!dados) return <div className="pagina"><Carregando /></div>;
 
   const tipoAtual = TIPOS_ITEM.find((t) => t.id === aba)!;

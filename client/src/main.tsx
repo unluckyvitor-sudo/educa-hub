@@ -11,6 +11,7 @@ import './estilos/jogos.css';
 import './estilos/suporte.css';
 import './estilos/conteudo.css';
 import './estilos/aovivo.css';
+import './estilos/termos.css';
 import { App } from './App';
 
 createRoot(document.getElementById('raiz')!).render(

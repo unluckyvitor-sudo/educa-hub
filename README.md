@@ -58,7 +58,8 @@ Para usar outro local, defina a variável de ambiente `EDUCAHUB_DADOS`.
 **Professor**
 - Turmas por ano/série/curso, com código de acesso; só entram alunos do mesmo nível.
 - Quem está online, ranking da turma, atividade recente e desempenho detalhado de cada aluno.
-- Missões diárias ou semanais: metas de atividades/acertos ou quiz com questões próprias.
+- Missões com prazo livre (hoje, 7 dias ou uma data até 60 dias à frente): metas de atividades/acertos ou quiz com questões próprias. Título, descrição e prazo podem ser editados depois.
+- Senha de aluno: na página do aluno, "Redefinir senha" gera uma senha temporária para quem esqueceu a sua.
 - Conteúdo próprio: na Biblioteca, cria tópicos e acrescenta questões, que valem para os alunos das turmas dele.
 - Quiz ao vivo: conduz uma rodada de perguntas com a turma inteira (a tela pode ser projetada) e termina com pódio.
 - Dificuldades da turma: as questões em que os alunos mais erram.
@@ -81,13 +82,15 @@ server/            API (Express), tempo real (Socket.IO) e banco (SQLite embutid
   src/rotas/       conta, aprender (jogos), social, suporte, conteudo (editor), aoVivo (quiz ao vivo), professor, admin
   src/acervo.js    conteúdo dos arquivos + conteúdo criado pela interface; respostas e caderno de erros
   src/copias.js    cópias de segurança do banco (src/copia.js é o comando)
+  src/termos.js    aceite dos termos e autorização do responsável
+  src/estaticos.js entrega do cliente em produção (compressão e cache)
   src/regras.js    XP, níveis, sequência e missões
   src/loja.js      catálogo de skins e acessórios
   src/tempoReal.js presença online e duelos
   src/limites.js   tetos de uso (login, cadastro, chamados, eventos em tempo real)
   src/registro.js  registro de auditoria
   src/moderacao.js filtro de palavrões e nomes reservados à equipe
-  testes/          testes de ponta a ponta: segurança, suporte, duelos, conteúdo e quiz ao vivo
+  testes/          testes de ponta a ponta: segurança, suporte, duelos, conteúdo, quiz ao vivo e ferramentas do professor
 client/            interface (React + Vite + TypeScript)
   src/gato/        modelo 3D do gato, pelagens, acessórios e animações (Three.js)
   modelos/         arquivo GLB de referência do gato
@@ -169,6 +172,46 @@ Novos itens da loja entram em `server/src/loja.js` (nome, preço, raridade) e em
 - Para o aluno, a resposta do administrador aparece como "Equipe EducaHub". O administrador pode ler as conversas entre alunos e professores (aba "Alunos e professores") e excluir chamados.
 - Limites: 5 chamados em andamento por pessoa, 10 novos por hora e 6 feedbacks por dia.
 
+## Termos de uso e privacidade
+
+- As páginas **/termos** e **/privacidade** abrem com ou sem login. Os textos ficam em `client/src/paginas/Termos.tsx`.
+- No cadastro, todos aceitam os termos. O aluno informa a data de nascimento e, se tiver menos de 18 anos, o nome e a autorização de um responsável.
+- A autorização é declarada por quem preenche o cadastro: a plataforma registra o nome informado e a data, mas não verifica a identidade do responsável.
+- Contas criadas antes dos termos (ou depois de uma versão nova) veem uma janela de aceite ao entrar. Para pedir um novo aceite a todos, mude `VERSAO_DOS_TERMOS` em `server/src/termos.js`.
+- As variáveis `EDUCAHUB_RESPONSAVEL` (quem responde pela instalação) e `EDUCAHUB_CONTATO` (e-mail ou telefone) aparecem nos dois documentos; o painel do administrador avisa enquanto não forem definidas.
+- **Os textos são um modelo.** Antes de abrir a plataforma ao público, revise-os com alguém que entenda da Lei Geral de Proteção de Dados.
+
+## Conexão instável
+
+- **Duelos:** quem perde a conexão tem 20 segundos para voltar. O duelo continua nesse tempo (quem caiu só deixa de responder) e, na volta, o jogador recebe a pergunta em andamento. Recarregar a página também volta ao duelo. Quem não retorna no prazo perde por abandono.
+- **Sessão:** quando a sessão expira ou é encerrada em outro aparelho, a plataforma volta para a tela de entrada com um aviso.
+- **Jogos:** se o resultado não chegar por falha de rede, as respostas continuam guardadas no servidor e o botão "Tentar de novo" busca o resultado sem refazer o jogo. Sair no meio de uma partida pede confirmação.
+- **Telas de erro:** todas têm o botão "Tentar de novo".
+
+## Publicar na internet
+
+A plataforma precisa de um servidor Node ligado o tempo todo, com conexões WebSocket (duelos e quiz ao vivo) e um disco que não se apague (o banco é um arquivo). Hospedagens só de sites estáticos, como a Netlify, não servem para o servidor.
+
+Em uma hospedagem de aplicações Node:
+
+1. Comando de construção: `npm install && npm run build`. Comando para iniciar: `npm start`. Versão do Node: 24 ou mais nova.
+2. Um disco persistente, com a variável `EDUCAHUB_DADOS` apontando para ele (por exemplo `/dados`).
+3. Variáveis de ambiente:
+
+| Variável | Para que serve |
+| --- | --- |
+| `PORT` | Porta do servidor (a hospedagem costuma definir sozinha). |
+| `EDUCAHUB_DADOS` | Pasta do banco e das cópias de segurança. Precisa estar no disco persistente. |
+| `EDUCAHUB_PROXY` | Use `1` quando houver um proxy da hospedagem na frente (é o caso comum). Sem isso o cookie de sessão não é marcado como seguro e todos os visitantes parecem vir do mesmo endereço. |
+| `EDUCAHUB_ADMIN_SENHA` | Senha inicial do `admin` (mínimo de 10 caracteres), usada só na primeira vez que o servidor liga. Troque-a em Configurações depois. |
+| `EDUCAHUB_RESPONSAVEL`, `EDUCAHUB_CONTATO` | Quem responde pela instalação e como falar com essa pessoa (aparecem nos termos). |
+| `EDUCAHUB_COPIAS` | Outra pasta para as cópias de segurança (opcional). |
+
+4. HTTPS: fica por conta da hospedagem. Com `EDUCAHUB_PROXY=1` o servidor passa a marcar o cookie como seguro e a enviar o cabeçalho HSTS.
+5. Não rode `npm run seed` em produção: as contas de demonstração usam todas a mesma senha.
+
+Em produção o servidor entrega o cliente comprimido (o carregamento inicial fica em cerca de 180 kB) e o motor 3D do gato é buscado à parte, depois que a página já apareceu.
+
 ## Segurança
 
 O que a plataforma faz sozinha:
@@ -235,6 +278,10 @@ node server/testes/conteudo.teste.mjs SENHA_DAS_CONTAS_DEMO SENHA_DO_ADMIN
 
 ```bash
 node server/testes/aoVivo.teste.mjs SENHA_DAS_CONTAS_DEMO
+```
+
+```bash
+node server/testes/professor.teste.mjs SENHA_DAS_CONTAS_DEMO
 ```
 
 Os testes usam as contas de demonstração e deixam rastros nelas (pontos, atividades e questões no caderno de erros). O conteúdo que eles criam é apagado no fim.

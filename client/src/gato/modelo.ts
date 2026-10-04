@@ -8,6 +8,7 @@ import { ACESSORIOS, ESCONDEM_TOPETE, ESCONDEM_TUFOS } from './acessorios';
 import { montarPrincipal } from './rigPrincipal';
 import { montarClassico } from './rigClassico';
 import type { Ajustes, Rig } from './rig';
+import type { AvatarConfig, Animacao } from './avatar';
 
 /**
  * Qual corpo o gato usa:
@@ -16,29 +17,8 @@ import type { Ajustes, Rig } from './rig';
  */
 export const ESTILO_DO_GATO: 'principal' | 'classico' = 'principal';
 
-export interface AvatarConfig {
-  pelagem: string;
-  roupa: string;
-  cabeca: string | null;
-  rosto: string | null;
-  pescoco: string | null;
-  costas: string | null;
-  mao: string | null;
-  fundo: string;
-}
-
-export const AVATAR_PADRAO: AvatarConfig = {
-  pelagem: 'smoking',
-  roupa: 'moletom-roxo',
-  cabeca: null,
-  rosto: null,
-  pescoco: null,
-  costas: null,
-  mao: 'livro',
-  fundo: 'lilas',
-};
-
-export type Animacao = 'parado' | 'acenar' | 'comemorar' | 'triste' | 'pensar' | 'dancar' | 'surpreso';
+// A configuração do avatar e os nomes das animações ficam em avatar.ts, que não depende do Three.js.
+export { AVATAR_PADRAO, type AvatarConfig, type Animacao } from './avatar';
 
 interface Pose {
   pulo: number;
