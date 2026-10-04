@@ -1,0 +1,443 @@
+/* Ajuda e suporte: perguntas frequentes, lista de chamados, conversa e feedbacks. */
+
+/* ───────── Contadores (menu, abas, perfil) ───────── */
+.contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--rosa);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.menu-item .contador {
+  margin-left: auto;
+}
+
+.suspenso-item .contador {
+  margin-left: auto;
+}
+
+.topo-perfil {
+  position: relative;
+}
+
+.topo-perfil .bolinha {
+  position: absolute;
+  top: 2px;
+  left: 40px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ff3d7a;
+  border: 2.5px solid #fff;
+}
+
+/* ───────── Perguntas frequentes ───────── */
+.perguntas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pergunta {
+  border: 1.5px solid var(--borda);
+  border-radius: var(--raio-p);
+  background: #fbfbff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.pergunta[open] {
+  border-color: #cfd0f8;
+  background: #f4f4fe;
+}
+
+.pergunta summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pergunta summary::-webkit-details-marker {
+  display: none;
+}
+
+.pergunta summary svg {
+  margin-left: auto;
+  flex: none;
+  color: var(--tinta-suave);
+  transition: transform 0.2s;
+}
+
+.pergunta[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.pergunta summary:hover {
+  color: var(--indigo);
+}
+
+.pergunta p {
+  padding: 0 16px 16px;
+  color: var(--tinta-suave);
+}
+
+.ajuda-rodape {
+  padding: 16px 18px;
+  border-radius: var(--raio-p);
+  background: #fff5fa;
+  border: 1.5px solid #ffd3e6;
+}
+
+/* ───────── Lista de chamados ───────── */
+.chamados {
+  display: flex;
+  flex-direction: column;
+}
+
+.chamado-linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 10px;
+  border-top: 1.5px solid var(--borda);
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.chamado-linha:first-child {
+  border-top: 0;
+}
+
+.chamado-linha:hover {
+  background: #f6f6fe;
+}
+
+.chamado-icone {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--lavanda);
+  color: var(--indigo);
+}
+
+.chamado-linha.com-novas .chamado-icone {
+  background: #ffe3f0;
+  color: #d6266f;
+}
+
+.chamado-icone b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--rosa);
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.chamado-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chamado-linha.com-novas .chamado-texto strong {
+  color: #d6266f;
+}
+
+.chamado-trecho {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tinta-suave);
+  font-size: 14.5px;
+}
+
+.chamado-lado {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* ───────── Conversa ───────── */
+.conversa {
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  background: var(--papel);
+  border: 1.5px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.conversa-topo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.conversa-topo h1 {
+  font-size: 26px;
+}
+
+.conversa-autor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--raio-p);
+  background: #f1f1fd;
+}
+
+.conversa-mensagens {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(56vh, 620px);
+  padding: 4px 4px 4px 0;
+  overflow-y: auto;
+}
+
+.balao {
+  align-self: flex-start;
+  max-width: min(78%, 640px);
+  padding: 11px 15px 12px;
+  border-radius: 18px 18px 18px 6px;
+  background: #f1f1fd;
+}
+
+.balao.atendente {
+  background: #fff1c9;
+}
+
+.balao.minha {
+  align-self: flex-end;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--indigo);
+  color: #fff;
+}
+
+.balao small {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 12.5px;
+  font-weight: 800;
+  opacity: 0.72;
+}
+
+.balao p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.conversa-avaliacao {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--raio-p);
+  background: #fffbea;
+  border: 1.5px solid #ffe7a3;
+}
+
+.conversa-envio {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.conversa-envio textarea {
+  flex: 1;
+  min-height: 62px;
+  max-height: 220px;
+}
+
+/* ───────── Estrelas ───────── */
+.estrelas,
+.campo .estrelas {
+  display: inline-flex;
+  gap: 2px;
+  color: #c9cce6;
+}
+
+.estrelas .cheia {
+  color: #ffb400;
+}
+
+.estrelas .cheia svg {
+  fill: currentColor;
+}
+
+.estrelas i {
+  display: inline-flex;
+  font-style: normal;
+}
+
+.estrelas.clicavel button {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 10px;
+  color: inherit;
+  transition: transform 0.15s;
+}
+
+.estrelas.clicavel button.cheia {
+  color: #ffb400;
+}
+
+.estrelas.clicavel button:hover {
+  transform: scale(1.18) rotate(-6deg);
+}
+
+/* ───────── Feedback ───────── */
+.chip.com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* As abas não passam da largura da tela no celular. */
+.abas {
+  max-width: 100%;
+}
+
+.feedback-obrigado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 22px;
+}
+
+.feedback-gato {
+  width: 210px;
+  height: 200px;
+}
+
+.feedback-media {
+  font-family: var(--fonte-titulo);
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.feedbacks {
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback {
+  padding: 14px 6px;
+  border-top: 1.5px solid var(--borda);
+}
+
+.feedback:first-child {
+  border-top: 0;
+}
+
+.feedback.novo {
+  padding-left: 14px;
+  border-left: 4px solid var(--rosa);
+}
+
+.feedback p {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── Painel do administrador ───────── */
+.aviso-seguranca {
+  border-color: #ffb4b4;
+  background: #fff3f3;
+  color: #8f1d1d;
+}
+
+.aviso-seguranca .cartao-titulo {
+  margin-bottom: 8px;
+}
+
+.aviso-seguranca ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+/* ───────── Professor aguardando aprovação ───────── */
+.area-de-espera {
+  min-height: 100vh;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px 20px 60px;
+}
+
+.area-de-espera > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 1180px) {
+  /* Menu só com ícones: o contador vira um selo no canto do ícone. */
+  .menu-item {
+    position: relative;
+  }
+
+  .menu-item .contador {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .conversa {
+    padding: 16px;
+  }
+
+  .balao {
+    max-width: 92%;
+  }
+
+  .chamado-lado small {
+    display: none;
+  }
+
+  .conversa-envio {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

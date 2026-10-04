@@ -1,0 +1,488 @@
+/* Estrutura do painel: barra do topo, menu lateral e área de conteúdo. */
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--largura-menu) minmax(0, 1fr);
+  grid-template-rows: var(--altura-topo) 1fr;
+  grid-template-areas: 'topo topo' 'menu conteudo';
+}
+
+/* ───────── Topo ───────── */
+.topo {
+  grid-area: topo;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 34px 0 30px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 14px rgba(40, 44, 120, 0.07);
+}
+
+.topo-marca {
+  flex: none;
+  transition: transform 0.2s;
+}
+
+.topo-marca:hover {
+  transform: scale(1.03) rotate(-1deg);
+}
+
+.busca {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(474px, 34vw);
+  height: 56px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 2px solid #d8dbf4;
+  background: #fbfbff;
+  color: var(--tinta);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.busca:focus-within {
+  border-color: var(--indigo-2);
+  box-shadow: 0 0 0 4px rgba(91, 95, 240, 0.14);
+}
+
+.busca input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.busca input::placeholder {
+  color: #7d82ad;
+  font-weight: 500;
+}
+
+.topo-fichas {
+  display: flex;
+  gap: 10px;
+}
+
+.ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 15px 0 11px;
+  border-radius: 999px;
+  background: var(--lavanda);
+  font-weight: 900;
+  font-size: 17px;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.ficha:hover {
+  transform: translateY(-2px);
+  background: var(--lavanda-2);
+}
+
+.ficha.fogo {
+  background: #fff1dc;
+  color: #c85a00;
+}
+
+.ficha.fogo.apagada {
+  background: #eef0f8;
+  color: var(--tinta-fraca);
+}
+
+.ficha.ouro {
+  background: #fff6d6;
+  color: #9a6400;
+}
+
+.topo-sino {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: var(--tinta);
+  transition: background 0.15s;
+}
+
+.topo-sino:hover {
+  background: var(--lavanda);
+}
+
+.topo-sino .bolinha {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ff3d7a;
+  border: 2.500px solid #fff;
+}
+
+.topo-perfil {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--tinta);
+}
+
+.topo-perfil .pata {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--noite);
+  transition: transform 0.2s;
+}
+
+.topo-perfil:hover .pata {
+  transform: rotate(-10deg) scale(1.06);
+}
+
+.suspenso-ancora {
+  position: relative;
+}
+
+.suspenso {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 50;
+  min-width: 250px;
+  padding: 8px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1.500px solid var(--borda);
+  box-shadow: var(--sombra-forte);
+  animation: surgir 0.16s ease-out;
+}
+
+.suspenso-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 13px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--tinta);
+}
+
+.suspenso-item:hover {
+  background: var(--lavanda);
+  color: var(--indigo);
+}
+
+.suspenso-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 14px;
+  border-bottom: 1.500px solid var(--borda);
+  margin-bottom: 6px;
+}
+
+.notificacoes {
+  width: min(360px, 88vw);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.notificacao {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border-radius: 13px;
+  font-weight: 600;
+}
+
+.notificacao:hover {
+  background: var(--lavanda);
+}
+
+.notificacao.nova {
+  background: #f4f1ff;
+  font-weight: 800;
+}
+
+.notificacao small {
+  display: block;
+  color: var(--tinta-fraca);
+  font-weight: 600;
+}
+
+/* ───────── Menu lateral ───────── */
+.menu {
+  grid-area: menu;
+  position: sticky;
+  top: var(--altura-topo);
+  height: calc(100vh - var(--altura-topo));
+  display: flex;
+  flex-direction: column;
+  padding: 42px 12px 0;
+  background: var(--noite);
+  color: #fff;
+  overflow: hidden;
+}
+
+.menu nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  z-index: 2;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  height: 58px;
+  padding: 0 15px;
+  border-radius: 15px;
+  font-size: 17.500px;
+  font-weight: 600;
+  color: #eef0ff;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.menu-item svg {
+  flex: none;
+  transition: transform 0.25s;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(3px);
+}
+
+.menu-item:hover svg {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+.menu-item.ativo {
+  background: linear-gradient(90deg, #5a5eef, #7a7df6);
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(91, 95, 240, 0.4);
+}
+
+.menu-item.ativo:hover {
+  transform: none;
+}
+
+.menu-rabiscos {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+}
+
+.menu-rabiscos > * {
+  position: absolute;
+}
+
+.menu-rabiscos .r-coroa {
+  left: 14px;
+  top: 34px;
+  transform: rotate(-12deg);
+  animation: flutuar 5s ease-in-out infinite;
+}
+
+.menu-rabiscos .r-seta {
+  left: 108px;
+  top: 86px;
+  animation: flutuar 6s ease-in-out -2s infinite;
+}
+
+.menu-rabiscos .r-coracao {
+  left: 18px;
+  top: 182px;
+  animation: flutuar 5.500s ease-in-out -1s infinite;
+}
+
+.menu-assinatura {
+  left: 36px;
+  top: 262px;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--roxo);
+  transform: rotate(-22deg);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.menu-onda {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 150px;
+  pointer-events: none;
+}
+
+/* ───────── Conteúdo ───────── */
+.conteudo {
+  grid-area: conteudo;
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pagina {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 28px 30px 120px;
+  animation: surgir 0.3s ease-out;
+}
+
+.pagina-cabecalho {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.pagina-cabecalho h1 {
+  font-size: clamp(30px, 3.400vw, 42px);
+}
+
+.pagina-cabecalho .acoes {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-weight: 800;
+  color: var(--tinta-suave);
+}
+
+.voltar:hover {
+  color: var(--indigo);
+}
+
+.onda-rodape {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ───────── Telas menores ───────── */
+@media (max-width: 1180px) {
+  :root {
+    --largura-menu: 84px;
+  }
+
+  .menu {
+    padding: 24px 12px 0;
+  }
+
+  .menu-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .menu-item span,
+  .menu-rabiscos > *:not(.r-coroa) {
+    display: none;
+  }
+
+  .menu-rabiscos .r-coroa {
+    left: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --altura-topo: 70px;
+  }
+
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'topo' 'conteudo';
+  }
+
+  .topo {
+    padding: 0 14px;
+    gap: 8px;
+  }
+
+  .busca {
+    display: none;
+  }
+
+  .topo-fichas {
+    margin-left: auto;
+  }
+
+  .ficha {
+    height: 38px;
+    font-size: 15px;
+    padding: 0 11px 0 8px;
+  }
+
+  .topo-perfil .pata {
+    width: 44px;
+    height: 44px;
+  }
+
+  .topo-perfil > svg {
+    display: none;
+  }
+
+  .menu {
+    position: fixed;
+    inset: auto 0 0 0;
+    top: auto;
+    z-index: 45;
+    height: 68px;
+    padding: 6px 8px;
+    box-shadow: 0 -6px 20px rgba(21, 28, 74, 0.25);
+  }
+
+  .menu nav {
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .menu-item {
+    width: 54px;
+    height: 54px;
+  }
+
+  .menu-rabiscos,
+  .menu-onda {
+    display: none;
+  }
+
+  .pagina {
+    padding: 18px 14px 150px;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "educa-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EDUCA HUB — plataforma educacional gamificada",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "node dev.mjs",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server",
+    "admin:senha": "npm run admin:senha -w server"
+  }
+}
