@@ -3,13 +3,19 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// O banco fica fora da pasta do projeto por padrão: pastas sincronizadas (OneDrive)
-// travam o arquivo do SQLite. Defina EDUCAHUB_DADOS para usar outro local.
-export const PASTA_DADOS =
-  process.env.EDUCAHUB_DADOS ||
-  (process.env.LOCALAPPDATA
-    ? path.join(process.env.LOCALAPPDATA, 'EducaHub')
-    : path.join(os.homedir(), '.educahub'));
+// A pasta de dados fica na pasta do usuário (no Windows, C:\Users\<nome>\EducaHub): fora do projeto, porque pastas
+// sincronizadas (OneDrive) travam o arquivo do SQLite, e fora de AppData, porque aplicativos empacotados do Windows
+// enxergam uma AppData só deles — a pasta existia para o servidor ligado por um deles e "sumia" para o resto do sistema.
+// Defina EDUCAHUB_DADOS para usar outro local.
+export const PASTA_DADOS = process.env.EDUCAHUB_DADOS || path.join(os.homedir(), process.platform === 'win32' ? 'EducaHub' : '.educahub');
+
+// Mudança de endereço, uma única vez: quem tinha os dados na pasta antiga (dentro de AppData) os traz para a nova.
+// A cópia leva o banco com o diário dele (-wal), então nada do que já foi gravado se perde; a pasta antiga fica como estava.
+const PASTA_ANTIGA = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'EducaHub') : null;
+if (!process.env.EDUCAHUB_DADOS && PASTA_ANTIGA && !fs.existsSync(path.join(PASTA_DADOS, 'educahub.db')) && fs.existsSync(path.join(PASTA_ANTIGA, 'educahub.db'))) {
+  fs.cpSync(PASTA_ANTIGA, PASTA_DADOS, { recursive: true });
+  console.log(`Dados trazidos de ${PASTA_ANTIGA} para ${PASTA_DADOS}.`);
+}
 
 fs.mkdirSync(PASTA_DADOS, { recursive: true });
 
