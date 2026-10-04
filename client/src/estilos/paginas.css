@@ -581,27 +581,28 @@
   .inicio-materias {
     padding: 18px 14px;
   }
-  .materia {
+  /* Só no painel inicial, onde os cartões ficam lado a lado; em Minhas matérias eles ocupam a largura toda. */
+  .inicio-materias .materia {
     padding: 12px;
   }
-  .materia-rodape {
+  .inicio-materias .materia-rodape {
     gap: 6px;
   }
-  .materia-rodape strong {
+  .inicio-materias .materia-rodape strong {
     font-size: clamp(13px, 4vw, 16px);
   }
-  .materia-seta {
+  .inicio-materias .materia-seta {
     width: 30px;
     height: 30px;
   }
-  .materia-seta svg {
+  .inicio-materias .materia-seta svg {
     width: 16px;
     height: 16px;
   }
 }
 
 @media (max-width: 340px) {
-  .materia-seta {
+  .inicio-materias .materia-seta {
     display: none;
   }
 }
