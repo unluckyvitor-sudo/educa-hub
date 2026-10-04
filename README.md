@@ -36,7 +36,7 @@ npm start
 | **Demonstração** | `npm run seed` cria uma professora, uma turma e dez alunos com histórico. Usuários e senha ficam em `contas-demo.txt`, na pasta de dados. `npm run seed -- --recriar` apaga e recria essas contas. |
 | **Novas contas** | Tela "Criar conta". Alunos entram direto; professores ficam pendentes até o administrador aprovar. |
 
-**Pasta de dados:** `%LOCALAPPDATA%\EducaHub` (banco `educahub.db` e os arquivos de senha).
+**Pasta de dados:** `EducaHub`, dentro da sua pasta de usuário (no Windows, `C:\Users\SEU-NOME\EducaHub`). Nela ficam o banco `educahub.db`, os arquivos de senha e as cópias de segurança.
 Ela fica fora do projeto de propósito: o OneDrive trava arquivos de banco de dados em pastas sincronizadas.
 Para usar outro local, defina a variável de ambiente `EDUCAHUB_DADOS`.
 
