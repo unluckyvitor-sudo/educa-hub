@@ -11,7 +11,7 @@ import { Retrato } from '../../componentes/Retrato';
 import { ListaDeAtividades } from '../../componentes/VisaoProgresso';
 import { FormMissao } from './FormMissao';
 import { copiarCodigo } from './Turmas';
-import type { AtividadeRecente, Estatisticas, MissaoProfessor, PosicaoRanking, ResumoUsuario, Turma } from '../../tipos';
+import type { AtividadeRecente, Dificuldade, Estatisticas, MissaoProfessor, PosicaoRanking, ResumoUsuario, Turma } from '../../tipos';
 
 interface Membro extends ResumoUsuario {
   online: boolean;
@@ -30,7 +30,42 @@ interface Dados {
   ranking: { semana: PosicaoRanking[]; total: PosicaoRanking[] };
 }
 
-type Aba = 'alunos' | 'ranking' | 'missoes' | 'atividade';
+type Aba = 'alunos' | 'ranking' | 'missoes' | 'atividade' | 'dificuldades';
+
+/** Questões em que a turma mais erra — o que vale retomar em sala. */
+function Dificuldades({ turmaId }: { turmaId: number }) {
+  const { dados, erro } = useCarregar(() => api<{ questoes: Dificuldade[] }>(`/prof/turmas/${turmaId}/dificuldades`), [turmaId]);
+  if (erro) return <ErroDeCarga erro={erro} />;
+  if (!dados) return <Carregando />;
+  if (!dados.questoes.length) {
+    return <Vazio titulo="Ainda sem dados suficientes">Quando os alunos responderem mais questões nos jogos e duelos, as que eles mais erram aparecem aqui.</Vazio>;
+  }
+  return (
+    <ol className="dificuldades">
+      {dados.questoes.map((q) => (
+        <li key={q.id}>
+          <div className="cresce">
+            <strong>{q.enunciado}</strong>
+            <span className="suave pequeno">
+              {[q.materia, q.topico].filter(Boolean).join(' · ')} · resposta certa: <b>{q.correta}</b>
+            </span>
+            <div className="linha" style={{ marginTop: 6 }}>
+              <div className="barra cresce">
+                <i style={{ width: `${q.taxa}%`, background: q.taxa >= 60 ? '#ef4b6c' : '#ffab1a' }} />
+              </div>
+              <span className="pequeno forte">{q.taxa}% de erro</span>
+            </div>
+          </div>
+          <span className="suave pequeno dificuldade-lado">
+            {q.erros} {q.erros === 1 ? 'erro' : 'erros'} em {q.respostas} respostas
+            <br />
+            {q.alunos} {q.alunos === 1 ? 'aluno' : 'alunos'}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 const TIPOS: Record<MissaoProfessor['tipo'], string> = { atividades: 'atividades', acertos: 'acertos', quiz: 'Quiz' };
 
 export function CartaoMissaoProfessor({ missao, aoExcluir }: { missao: MissaoProfessor; aoExcluir: () => void }) {
@@ -160,6 +195,7 @@ export function TurmaDetalhe() {
               ['ranking', 'Ranking'],
               ['missoes', 'Missões'],
               ['atividade', 'Atividade'],
+              ['dificuldades', 'Dificuldades'],
             ] as const
           ).map(([id, nome]) => (
             <button key={id} className={aba === id ? 'ativa' : ''} onClick={() => setAba(id)}>
@@ -262,6 +298,8 @@ export function TurmaDetalhe() {
           ))}
 
         {aba === 'atividade' && <ListaDeAtividades atividades={dados.recentes} comAluno />}
+
+        {aba === 'dificuldades' && <Dificuldades turmaId={turma.id} />}
       </section>
 
       <FormMissao aberto={novaMissao} aoFechar={() => setNovaMissao(false)} aoCriar={recarregar} turmas={[turma]} turmaFixa={turma.id} materias={dados.materias} />

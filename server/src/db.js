@@ -222,6 +222,55 @@ CREATE TABLE IF NOT EXISTS auditoria (
   detalhe TEXT,
   criado_em TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Conteúdo criado pela interface, além do que vem nos arquivos de server/src/conteudo.
+-- publico = 1: aparece para todos os alunos do nível. publico = 0: só para as turmas do professor que criou.
+CREATE TABLE IF NOT EXISTS topicos_extras (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  serie TEXT NOT NULL,
+  materia TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  resumo TEXT NOT NULL DEFAULT '',
+  autor_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  publico INTEGER NOT NULL DEFAULT 0,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- topico_id é o id de um tópico dos arquivos ("F6.matematica.1") ou de um tópico extra ("x12").
+CREATE TABLE IF NOT EXISTS questoes_extras (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topico_id TEXT NOT NULL,
+  autor_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  publico INTEGER NOT NULL DEFAULT 0,
+  enunciado TEXT NOT NULL,
+  correta TEXT NOT NULL,
+  erradas_json TEXT NOT NULL,
+  explicacao TEXT,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_questoes_extras_topico ON questoes_extras (topico_id);
+
+-- Cada resposta dada em jogos e duelos: base do relatório de dificuldades da turma.
+CREATE TABLE IF NOT EXISTS respostas (
+  id INTEGER PRIMARY KEY,
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  questao_id TEXT NOT NULL,
+  acertou INTEGER NOT NULL,
+  dia TEXT NOT NULL,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_respostas_usuario ON respostas (usuario_id, questao_id);
+CREATE INDEX IF NOT EXISTS idx_respostas_questao ON respostas (questao_id);
+
+-- Caderno de erros: questões que o aluno errou e ainda não acertou duas vezes seguidas.
+CREATE TABLE IF NOT EXISTS erros (
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  questao_id TEXT NOT NULL,
+  vezes INTEGER NOT NULL DEFAULT 1,
+  acertos_seguidos INTEGER NOT NULL DEFAULT 0,
+  atualizado_em TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (usuario_id, questao_id)
+);
 `);
 
 /** Executa a função dentro de uma transação. */

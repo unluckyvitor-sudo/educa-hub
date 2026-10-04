@@ -13,6 +13,7 @@ import { Aguardando } from './paginas/Aguardando';
 import { Configuracoes } from './paginas/Configuracoes';
 import { Perfil } from './paginas/Perfil';
 import { Biblioteca } from './paginas/Biblioteca';
+import { Conteudo } from './paginas/Conteudo';
 import { Ajuda } from './paginas/Ajuda';
 import { Chamado } from './paginas/Chamado';
 import { Atendimento } from './paginas/Atendimento';
@@ -151,6 +152,7 @@ export function App() {
             {papel === 'aluno' && (
               <>
                 <Route path="/jogar/missao/:missaoId" element={<Jogar />} />
+                <Route path="/jogar/revisao" element={<Jogar revisao />} />
                 <Route path="/jogar/:topicoId/:modo" element={<Jogar />} />
                 <Route path="/duelo" element={<Duelo />} />
               </>
@@ -189,6 +191,7 @@ export function App() {
                   <Route path="/alunos/:alunoId" element={<AlunoDetalhe />} />
                   <Route path="/atendimento" element={<Atendimento />} />
                   <Route path="/atendimento/:id" element={<Chamado voltarPara="/atendimento" />} />
+                  <Route path="/conteudo/:topicoId" element={<Conteudo />} />
                 </>
               )}
               <Route path="/ajuda" element={<Ajuda />} />

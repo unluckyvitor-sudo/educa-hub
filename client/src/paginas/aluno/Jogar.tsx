@@ -24,7 +24,11 @@ interface Partida {
   tempo?: number;
   itens?: ItemDeJogo[];
   cartas?: Carta[];
+  /** Partida do caderno de erros. */
+  revisao?: boolean;
 }
+
+type Contexto = 'topico' | 'missao' | 'revisao';
 
 const FRASES = [
   { minimo: 1, titulo: 'Perfeito!', fala: 'Você gabaritou! Estou impressionado!' },
@@ -63,7 +67,7 @@ export function MarcoAlcancado({ marco, aoFechar }: { marco: Marco | null; aoFec
   );
 }
 
-function Resultado({ resultado, voltarPara, aoRepetir }: { resultado: ResultadoJogo; voltarPara: string; aoRepetir: () => void }) {
+function Resultado({ resultado, contexto, voltarPara, aoRepetir }: { resultado: ResultadoJogo; contexto: Contexto; voltarPara: string; aoRepetir: () => void }) {
   const fracao = resultado.total ? resultado.acertos / resultado.total : 0;
   const estrelas = fracao >= 0.9 ? 3 : fracao >= 0.6 ? 2 : fracao > 0 ? 1 : 0;
   const frase = FRASES.find((f) => fracao >= f.minimo)!;
@@ -106,10 +110,38 @@ function Resultado({ resultado, voltarPara, aoRepetir }: { resultado: ResultadoJ
           <Chama tamanho={26} /> Sequência de {resultado.sequencia.sequencia} {resultado.sequencia.sequencia === 1 ? 'dia' : 'dias'}!
         </div>
       )}
+      {contexto === 'revisao' && (
+        <div className={`resultado-faixa ${resultado.noCaderno ? 'nivel' : 'fogo'}`}>
+          {resultado.noCaderno
+            ? `${resultado.noCaderno === 1 ? 'Ainda há 1 questão' : `Ainda há ${resultado.noCaderno} questões`} no seu caderno de erros.`
+            : 'Caderno de erros zerado! Você dominou tudo o que tinha errado.'}
+        </div>
+      )}
+      {resultado.erradas.length > 0 && (
+        <details className="rever" open>
+          <summary>
+            Rever o que errei <span className="etiqueta vermelha">{resultado.erradas.length}</span>
+          </summary>
+          <ul>
+            {resultado.erradas.map((q) => (
+              <li key={q.enunciado}>
+                <strong>{q.enunciado}</strong>
+                <span className="rever-certa">
+                  <Icone nome="check" tamanho={16} /> {q.correta}
+                </span>
+                {q.explicacao && <small>{q.explicacao}</small>}
+              </li>
+            ))}
+          </ul>
+          {contexto !== 'missao' && <p className="pequeno suave">Essas questões ficam no seu caderno de erros (em Meu progresso) até você acertar duas vezes seguidas.</p>}
+        </details>
+      )}
       <div className="linha quebra" style={{ justifyContent: 'center', marginTop: 8 }}>
-        <button className="botao claro" onClick={aoRepetir}>
-          <Icone nome="atualizar" tamanho={18} /> Jogar de novo
-        </button>
+        {(contexto !== 'revisao' || resultado.noCaderno > 0) && (
+          <button className="botao claro" onClick={aoRepetir}>
+            <Icone nome="atualizar" tamanho={18} /> {contexto === 'revisao' ? 'Revisar mais' : 'Jogar de novo'}
+          </button>
+        )}
         <Link className="botao" to={voltarPara}>
           Continuar <Icone nome="seta" tamanho={18} />
         </Link>
@@ -119,7 +151,7 @@ function Resultado({ resultado, voltarPara, aoRepetir }: { resultado: ResultadoJ
   );
 }
 
-export function Jogar() {
+export function Jogar({ revisao = false }: { revisao?: boolean }) {
   const { topicoId, modo, missaoId } = useParams();
   const navegar = useNavigate();
   const usuario = useEstado((e) => e.usuario)!;
@@ -137,7 +169,7 @@ export function Jogar() {
     setResultado(null);
     setErro(null);
     setHumor('acenar');
-    api<Partida>('/jogos/iniciar', { corpo: missaoId ? { missaoId: Number(missaoId) } : { topicoId, modo } })
+    api<Partida>('/jogos/iniciar', { corpo: revisao ? { revisao: true } : missaoId ? { missaoId: Number(missaoId) } : { topicoId, modo } })
       .then((p) => ativo && setPartida(p))
       .catch((e) => ativo && setErro(mensagemDoErro(e)));
     relogio.current = window.setTimeout(() => ativo && setHumor('parado'), 2200);
@@ -145,7 +177,7 @@ export function Jogar() {
       ativo = false;
       window.clearTimeout(relogio.current);
     };
-  }, [topicoId, modo, missaoId, rodada]);
+  }, [topicoId, modo, missaoId, revisao, rodada]);
 
   const reagir = useCallback((acertou: boolean) => {
     window.clearTimeout(relogio.current);
@@ -169,7 +201,8 @@ export function Jogar() {
     }
   }, [partida, atualizarUsuario]);
 
-  const voltarPara = missaoId ? '/desafios' : partida?.materia ? `/materias/${partida.materia}` : '/materias';
+  const voltarPara = revisao ? '/progresso' : missaoId ? '/desafios' : partida?.materia ? `/materias/${partida.materia}` : '/materias';
+  const contexto: Contexto = revisao ? 'revisao' : missaoId ? 'missao' : 'topico';
   const cores = coresDaMateria(partida?.materia);
   const estilo = { '--claro': cores.claro, '--claro2': cores.claro2, '--forte': cores.forte } as CSSProperties;
 
@@ -184,7 +217,7 @@ export function Jogar() {
           {partida && (
             <span className="suave pequeno">
               {partida.materiaNome ? `${partida.materiaNome} · ` : ''}
-              {missaoId ? 'Desafio do professor' : MODOS[partida.modo].nome}
+              {revisao ? 'Revisão do que você errou' : missaoId ? 'Desafio do professor' : MODOS[partida.modo].nome}
             </span>
           )}
         </div>
@@ -206,7 +239,7 @@ export function Jogar() {
           ) : !partida ? (
             <Carregando texto="Embaralhando as questões..." />
           ) : resultado ? (
-            <Resultado resultado={resultado} voltarPara={voltarPara} aoRepetir={() => setRodada((r) => r + 1)} />
+            <Resultado resultado={resultado} contexto={contexto} voltarPara={voltarPara} aoRepetir={() => setRodada((r) => r + 1)} />
           ) : partida.modo === 'memoria' ? (
             <Memoria key={partida.partida} partida={partida.partida} cartas={partida.cartas!} aoResponder={reagir} aoTerminar={terminar} />
           ) : (

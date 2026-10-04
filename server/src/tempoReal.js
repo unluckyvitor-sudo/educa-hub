@@ -4,7 +4,8 @@ import { Server } from 'socket.io';
 import { db, diaLocal } from './db.js';
 import { usuarioDoCookie, resumoPublico } from './auth.js';
 import { buscarUsuario, idsDosAmigos, idsDosProfessores, saoAmigos } from './consultas.js';
-import { questoesDaSerie, embaralhar, MATERIAS } from './conteudo/index.js';
+import { embaralhar, MATERIAS } from './conteudo/index.js';
+import { questoesPublicas, registrarResposta as anotarNoAcervo } from './acervo.js';
 import { concederGanho, registrarDiaAtivo, RECOMPENSA_DUELO } from './regras.js';
 import { dentroDoLimite } from './limites.js';
 import { filtrarTexto } from './moderacao.js';
@@ -57,11 +58,12 @@ const fila = new Map(); // "serie|materia" → usuarioId aguardando oponente
 const convites = new Map(); // id → { de, para, materia, timer }
 
 function sortearQuestoes(serie, materia) {
-  return embaralhar(questoesDaSerie(serie, materia))
+  return embaralhar(questoesPublicas(serie, materia))
     .slice(0, TOTAL_QUESTOES)
     .map((q) => {
       const alternativas = embaralhar([q.correta, ...q.erradas]);
       return {
+        id: q.id,
         enunciado: q.enunciado,
         alternativas,
         correta: alternativas.indexOf(q.correta),
@@ -190,6 +192,7 @@ function fecharPergunta(duelo) {
     const ganho = acertou ? 100 + Math.round((50 * restante) / (TEMPO_QUESTAO_S * 1000)) : 0;
     j.pontos += ganho;
     if (acertou) j.acertos += 1;
+    if (!j.bot) anotarNoAcervo(j.id, q.id, acertou); // caderno de erros e dificuldades da turma
     return { id: j.id, resposta: j.rodada?.resposta ?? null, acertou, ganho, pontos: j.pontos };
   });
   emitirAoDuelo(duelo, 'duelo:resultado', { indice: duelo.indice, correta: q.correta, explicacao: q.explicacao, placar });
@@ -258,7 +261,7 @@ function jogadorDe(usuario) {
 
 function materiaValida(materia, serie) {
   if (!materia) return null;
-  return questoesDaSerie(serie, materia).length > 0 ? materia : null;
+  return questoesPublicas(serie, materia).length > 0 ? materia : null;
 }
 
 function registrarEventosDeDuelo(socket, usuarioId) {

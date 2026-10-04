@@ -16,6 +16,7 @@ import rotasSocial from './rotas/social.js';
 import rotasProfessor from './rotas/professor.js';
 import rotasAdmin from './rotas/admin.js';
 import rotasSuporte from './rotas/suporte.js';
+import rotasConteudo from './rotas/conteudo.js';
 
 const PORTA = Number(process.env.PORT) || 3001;
 const PASTA_CLIENTE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'client', 'dist');
@@ -78,6 +79,7 @@ app.use('/api', rotasAprender);
 app.use('/api', rotasSocial);
 app.use('/api', rotasSuporte);
 app.use('/api/prof', rotasProfessor);
+app.use('/api/conteudo', rotasConteudo);
 app.use('/api/admin', rotasAdmin);
 app.use('/api', (_req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));
 

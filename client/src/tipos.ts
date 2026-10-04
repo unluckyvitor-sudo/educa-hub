@@ -61,6 +61,8 @@ export interface Topico {
   titulo: string;
   resumo: string;
   questoes: number;
+  /** Criado por um professor ou administrador pela interface. */
+  extra?: boolean;
   modos: Record<Modo, number>;
   concluidas: number;
 }
@@ -148,7 +150,7 @@ export interface AtividadeRecente {
   materia: string | null;
   materiaId?: string | null;
   titulo: string;
-  modo: Modo;
+  modo: Modo | 'revisao';
   acertos: number;
   total: number;
   xp?: number;
@@ -161,6 +163,8 @@ export interface Progresso {
   moedas: number;
   total: number;
   concluidas: number;
+  /** Questões esperando revisão no caderno de erros. */
+  erros: number;
   estatisticas: Estatisticas;
   sequencia: InfoSequencia;
   materias: { id: string; nome: string; total: number; concluidas: number; atividades: number; aproveitamento: number | null }[];
@@ -255,4 +259,35 @@ export interface ResultadoJogo {
   subiuNivel: boolean;
   nivel?: number;
   sequencia: ResultadoSequencia | null;
+  /** O que foi respondido errado nesta partida, com a resposta certa. */
+  erradas: QuestaoErrada[];
+  /** Quantas questões estão no caderno de erros depois desta partida. */
+  noCaderno: number;
+}
+
+export interface QuestaoErrada {
+  enunciado: string;
+  correta: string;
+  explicacao: string | null;
+}
+
+export interface CadernoDeErros {
+  total: number;
+  /** Acertos seguidos que tiram uma questão do caderno. */
+  paraDominar: number;
+  porMateria: { id: string; nome: string; total: number }[];
+  questoes: { id: string; enunciado: string; materia: string | null; materiaId: string; topico: string | null; vezes: number; acertosSeguidos: number }[];
+}
+
+export interface Dificuldade {
+  id: string;
+  enunciado: string;
+  correta: string;
+  materia: string | null;
+  materiaId: string;
+  topico: string | null;
+  respostas: number;
+  erros: number;
+  alunos: number;
+  taxa: number;
 }

@@ -118,7 +118,13 @@ export function infoSequencia(usuario) {
 }
 
 /** XP e moedas de uma atividade; repetir o mesmo jogo rende menos. */
-export function recompensaAtividade(usuarioId, { topicoId, missaoId, modo, acertos, total }) {
+export function recompensaAtividade(usuarioId, { topicoId, missaoId, modo, revisao = false, acertos, total }) {
+  if (revisao) {
+    // Caderno de erros: as questões se repetem, então rende menos que um jogo novo — e quase nada depois de três revisões no dia.
+    const feitas = db.prepare("SELECT COUNT(*) AS n FROM atividades WHERE usuario_id = ? AND modo = 'revisao' AND dia = ?").get(usuarioId, diaLocal()).n;
+    const fator = feitas < 3 ? 1 : 0.2;
+    return { xp: Math.round(acertos * 5 * fator), moedas: Math.round(acertos * fator) };
+  }
   const perfeito = total > 0 && acertos === total;
   let xp = acertos * 10 + (perfeito ? 20 : 0);
   let moedas = acertos * 2 + (perfeito ? 5 : 0);

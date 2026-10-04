@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 import { Router } from 'express';
 import { db, diaLocal, diasAtras, inicioDaSemana } from '../db.js';
 import { exigirPapel, resumoPublico, texto, inteiro, ErroDeEntrada } from '../auth.js';
-import { MATERIAS, SERIE_POR_ID, serieValida, topicoPorId, materiasDaSerie } from '../conteudo/index.js';
+import { MATERIAS, SERIE_POR_ID, serieValida, materiasDaSerie } from '../conteudo/index.js';
+import { tituloDoTopico, dificuldadesDe } from '../acervo.js';
 import { andamentoNaMissao, LIMITE_RECOMPENSA_PROFESSOR } from '../regras.js';
 import { buscarUsuario, professorDoAluno, estatisticasDoAluno } from '../consultas.js';
 import { estaOnline, notificar } from '../tempoReal.js';
@@ -54,7 +55,7 @@ function formatarAtividade(a) {
     alunoId: a.usuario_id,
     aluno: a.aluno,
     materia: MATERIAS[a.materia] ?? null,
-    titulo: a.missao ?? topicoPorId(a.topico_id)?.titulo ?? 'Atividade',
+    titulo: a.missao ?? tituloDoTopico(a.topico_id) ?? (a.modo === 'revisao' ? 'Caderno de erros' : 'Atividade'),
     modo: a.modo,
     acertos: a.acertos,
     total: a.total,
@@ -168,6 +169,12 @@ rotas.get('/turmas/:id', (req, res) => {
       total: montarRanking({ filtro: 'u.id IN (SELECT aluno_id FROM turma_membros WHERE turma_id = ?)', params: [turma.id], periodo: 'total' }).ranking,
     },
   });
+});
+
+// Questões em que a turma mais erra: mostra ao professor o que vale retomar em sala.
+rotas.get('/turmas/:id/dificuldades', (req, res) => {
+  const turma = turmaDoProfessor(req);
+  res.json({ questoes: dificuldadesDe(membrosDaTurma(turma.id).map((m) => m.id)) });
 });
 
 rotas.delete('/turmas/:id/membros/:alunoId', (req, res) => {
