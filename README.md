@@ -192,7 +192,19 @@ Novos itens da loja entram em `server/src/loja.js` (nome, preço, raridade) e em
 
 A plataforma precisa de um servidor Node ligado o tempo todo, com conexões WebSocket (duelos e quiz ao vivo) e um disco que não se apague (o banco é um arquivo). Hospedagens só de sites estáticos, como a Netlify, não servem para o servidor.
 
-Em uma hospedagem de aplicações Node:
+**Para testar sem hospedar:** um endereço público temporário, com HTTPS, que aponta para a plataforma rodando neste computador. Precisa do [cloudflared](https://github.com/cloudflare/cloudflared) (`winget install --id Cloudflare.cloudflared -e`).
+
+```bash
+npm run build
+```
+
+```bash
+npm run tunel
+```
+
+O comando mostra o endereço (algo como `https://palavras-aleatorias.trycloudflare.com`). Ele vale enquanto a janela ficar aberta, muda a cada vez que o túnel é ligado e depende de o computador continuar ligado. Os dados continuam na pasta de dados deste computador. Quem tiver o endereço chega à tela de entrada: troque a senha inicial do administrador e exclua as contas de demonstração antes de divulgar.
+
+**Para deixar no ar de vez**, em uma hospedagem de aplicações Node:
 
 1. Comando de construção: `npm install && npm run build`. Comando para iniciar: `npm start`. Versão do Node: 24 ou mais nova.
 2. Um disco persistente, com a variável `EDUCAHUB_DADOS` apontando para ele (por exemplo `/dados`).
