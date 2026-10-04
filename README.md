@@ -51,12 +51,17 @@ Para usar outro local, defina a variável de ambiente `EDUCAHUB_DADOS`.
 - Duelos em tempo real: contra um amigo (com chat), contra alguém aleatório do mesmo nível (só reações rápidas) ou treino contra o Mestre Bigodes.
 - Avatar: gato 3D com 12 pelagens, 10 roupas e 31 acessórios, comprados com moedas ou ganhos por sequência.
 - Amigos, rankings (nível, turma, amigos, geral; semanal ou total) e perfil.
+- Caderno de erros: o que o aluno erra nos jogos e duelos fica guardado para revisão (em Meu progresso e Minhas matérias) e sai depois de dois acertos seguidos. O resultado de cada jogo mostra o que foi errado, com a resposta certa.
+- Quiz ao vivo: quando o professor da turma abre um, o convite aparece na tela e todos respondem ao mesmo tempo.
 - Ajuda e suporte (menu do perfil): perguntas frequentes, chamados para a equipe ou para um professor da turma, e feedback com nota de 1 a 5.
 
 **Professor**
 - Turmas por ano/série/curso, com código de acesso; só entram alunos do mesmo nível.
 - Quem está online, ranking da turma, atividade recente e desempenho detalhado de cada aluno.
 - Missões diárias ou semanais: metas de atividades/acertos ou quiz com questões próprias.
+- Conteúdo próprio: na Biblioteca, cria tópicos e acrescenta questões, que valem para os alunos das turmas dele.
+- Quiz ao vivo: conduz uma rodada de perguntas com a turma inteira (a tela pode ser projetada) e termina com pódio.
+- Dificuldades da turma: as questões em que os alunos mais erram.
 - Dúvidas dos alunos: os alunos das turmas podem escrever para o professor, que responde pela plataforma.
 - Ajuda e suporte, inclusive enquanto a conta aguarda aprovação.
 
@@ -65,20 +70,24 @@ Para usar outro local, defina a variável de ambiente `EDUCAHUB_DADOS`.
 - Suporte: fila de pedidos de ajuda, resposta em nome da "Equipe EducaHub" e acompanhamento das conversas entre alunos e professores.
 - Feedbacks: nota média, distribuição e comentários. Registro de segurança (logins, senhas e ações administrativas) em Moderação.
 - Pendências de segurança no painel (senha inicial em uso, contas de demonstração ativas).
+- Conteúdo: cria tópicos e questões para todos os alunos de um nível e publica o que os professores criaram.
+- Cópia de segurança do banco: uma por dia, automática, e um botão no painel para fazer na hora.
 
 ## Estrutura
 
 ```
 server/            API (Express), tempo real (Socket.IO) e banco (SQLite embutido no Node)
   src/conteudo/    currículo e banco de questões por nível
-  src/rotas/       conta, aprender (jogos), social, suporte, professor, admin
+  src/rotas/       conta, aprender (jogos), social, suporte, conteudo (editor), aoVivo (quiz ao vivo), professor, admin
+  src/acervo.js    conteúdo dos arquivos + conteúdo criado pela interface; respostas e caderno de erros
+  src/copias.js    cópias de segurança do banco (src/copia.js é o comando)
   src/regras.js    XP, níveis, sequência e missões
   src/loja.js      catálogo de skins e acessórios
   src/tempoReal.js presença online e duelos
   src/limites.js   tetos de uso (login, cadastro, chamados, eventos em tempo real)
   src/registro.js  registro de auditoria
   src/moderacao.js filtro de palavrões e nomes reservados à equipe
-  testes/          testes de ponta a ponta: segurança, suporte e duelos
+  testes/          testes de ponta a ponta: segurança, suporte, duelos, conteúdo e quiz ao vivo
 client/            interface (React + Vite + TypeScript)
   src/gato/        modelo 3D do gato, pelagens, acessórios e animações (Three.js)
   modelos/         arquivo GLB de referência do gato
@@ -116,7 +125,15 @@ Lista vazia quer dizer que nada se atravessa. Rode sempre que criar ou mexer em 
 
 ## Como adicionar conteúdo
 
-Os arquivos em `server/src/conteudo/` listam, por série e matéria, os tópicos com resumo e questões:
+**Pela interface (sem mexer em código):** professores e administradores abrem a **Biblioteca**, escolhem o nível e usam "Novo tópico" ou o botão de questões de um tópico.
+
+- Uma questão tem enunciado, a resposta certa, três erradas e uma explicação opcional.
+- Um tópico novo aparece para os alunos quando tem pelo menos 4 questões (antes disso é rascunho).
+- O que o administrador cria vale para todos os alunos do nível. O que o professor cria vale para os alunos das turmas dele, até o administrador clicar em "Publicar para todos".
+- Um quiz usa até 6 questões do tópico (mais 2 de revisão) e dá preferência às que o aluno errou e às que ele ainda não viu.
+- Os duelos usam só o conteúdo público, porque os dois jogadores precisam poder ver as mesmas questões.
+
+**Nos arquivos:** `server/src/conteudo/` lista, por série e matéria, os tópicos com resumo e questões:
 
 ```js
 ['F6', 'matematica', [
@@ -127,6 +144,22 @@ Os arquivos em `server/src/conteudo/` listam, por série e matéria, os tópicos
 ```
 
 Novos itens da loja entram em `server/src/loja.js` (nome, preço, raridade) e em `client/src/gato/acessorios.ts` (o desenho 3D, com o mesmo id). Depois de desenhar um acessório, inclua-o na lista `ENCAIXE` do laboratório e rode `verificarColisoes()` (ver "Nada atravessa o gato").
+
+## Caderno de erros
+
+- Toda resposta dada nos jogos, duelos e quizzes ao vivo é registrada (tabela `respostas`). As dos desafios de professor ficam de fora, porque somem com a missão.
+- Uma questão errada entra no caderno do aluno e sai quando ele a acerta duas vezes seguidas.
+- "Revisar agora" abre um quiz com até 8 questões do caderno, das mais antigas para as mais novas. A revisão rende 5 XP e 1 moeda por acerto, e quase nada depois de três revisões no mesmo dia.
+- Na turma, a aba **Dificuldades** mostra ao professor as questões com maior taxa de erro (com pelo menos 3 respostas).
+
+## Quiz ao vivo
+
+- O professor abre a turma, clica em **Quiz ao vivo**, escolhe a matéria (ou um tópico) e a quantidade de perguntas.
+- Os alunos da turma que estão com a plataforma aberta recebem o convite na hora; quem entrar depois também encontra o quiz.
+- O professor conduz: começa, fecha a pergunta antes do tempo se quiser e passa para a próxima. Cada pergunta dura 20 segundos e fecha sozinha quando todos respondem.
+- O gabarito só aparece depois que a pergunta fecha, inclusive na tela do professor, que costuma estar projetada.
+- No fim há pódio e recompensa: 10 XP mais 5 por acerto, com bônus para os três primeiros quando há pelo menos 3 participantes. Cada aluno recebe recompensa de até 3 quizzes por dia.
+- A sessão fica na memória do servidor: reiniciar o servidor encerra um quiz em andamento.
 
 ## Suporte e feedbacks
 
@@ -154,6 +187,32 @@ O que depende de quem administra:
 - Excluir as contas de demonstração antes de abrir a plataforma para alunos de verdade: todas usam a mesma senha.
 - Antes de publicar na internet, colocar a plataforma atrás de HTTPS. Na rede local ela funciona em HTTP, e nesse caso as senhas trafegam sem criptografia dentro da rede.
 
+## Cópias de segurança e histórico
+
+**Banco de dados.** O servidor grava uma cópia por dia em `copias`, dentro da pasta de dados, e guarda as 14 mais recentes. O painel do administrador mostra a última e tem o botão "Fazer cópia agora".
+
+```bash
+npm run backup
+```
+
+```bash
+npm run backup -- --listar
+```
+
+Para voltar a uma cópia, pare o servidor e rode o comando abaixo com o nome mostrado na lista. Ele confere a integridade da cópia, guarda o estado atual antes de trocar e se recusa a rodar com o servidor ligado.
+
+```bash
+npm run backup -- --restaurar NOME-DA-COPIA.db
+```
+
+As cópias ficam no mesmo disco do banco. Para protegê-las de um defeito no disco, defina a variável `EDUCAHUB_COPIAS` com outra pasta (pen drive, outra unidade ou uma pasta sincronizada).
+
+**Código.** O projeto é um repositório git. Cada conjunto de mudanças é um registro que pode ser consultado ou desfeito:
+
+```bash
+git log --oneline
+```
+
 ## Testes
 
 Com o servidor rodando e os dados de demonstração criados (a senha do administrador é opcional e habilita mais verificações):
@@ -169,5 +228,15 @@ node server/testes/suporte.teste.mjs SENHA_DAS_CONTAS_DEMO SENHA_DO_ADMIN
 ```bash
 node server/testes/duelo.teste.mjs SENHA_DAS_CONTAS_DEMO
 ```
+
+```bash
+node server/testes/conteudo.teste.mjs SENHA_DAS_CONTAS_DEMO SENHA_DO_ADMIN
+```
+
+```bash
+node server/testes/aoVivo.teste.mjs SENHA_DAS_CONTAS_DEMO
+```
+
+Os testes usam as contas de demonstração e deixam rastros nelas (pontos, atividades e questões no caderno de erros). O conteúdo que eles criam é apagado no fim.
 
 O teste de segurança repete ataques que já funcionaram (servidor derrubado por evento malformado, poluição de protótipo, missões concluídas sem jogar) e confere que agora são recusados.

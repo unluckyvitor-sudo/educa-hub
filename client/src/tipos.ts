@@ -150,7 +150,7 @@ export interface AtividadeRecente {
   materia: string | null;
   materiaId?: string | null;
   titulo: string;
-  modo: Modo | 'revisao';
+  modo: Modo | 'revisao' | 'aovivo';
   acertos: number;
   total: number;
   xp?: number;

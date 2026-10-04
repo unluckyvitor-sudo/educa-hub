@@ -113,6 +113,13 @@ export function tituloDoTopico(id) {
   return (carregarExtras().topicos.get(id) ?? topicoDoArquivo(id))?.titulo ?? null;
 }
 
+const TITULO_POR_MODO = { revisao: 'Caderno de erros', aovivo: 'Quiz ao vivo' };
+
+/** Nome de uma atividade no histórico (linha de `atividades`, com o título da missão em `missao` quando houver). */
+export function tituloDaAtividade(a) {
+  return a.missao ?? tituloDoTopico(a.topico_id) ?? TITULO_POR_MODO[a.modo] ?? 'Atividade';
+}
+
 /** Tópico de arquivo ou extra, sem regra de visibilidade nem questões montadas (uso do editor). */
 export function topicoBruto(id) {
   return carregarExtras().topicos.get(id) ?? topicoDoArquivo(id);

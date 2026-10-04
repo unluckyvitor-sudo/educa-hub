@@ -2,6 +2,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
 import { useEstado, avisar } from './estado';
+import { useAoVivo, type SessaoAoVivo } from './aoVivo';
 import type { AvatarConfig } from './gato/modelo';
 import type { Notificacao, ResultadoSequencia } from './tipos';
 
@@ -135,6 +136,12 @@ export function conectarTempoReal() {
   const duelo = useDuelo;
 
   socket.on('notificacao', (n: Notificacao) => useEstado.getState().receberNotificacao(n));
+
+  // Quiz ao vivo: ao conectar (ou reconectar depois de uma queda), busca a sessão em andamento.
+  socket.on('connect', () => void useAoVivo.getState().carregar());
+  socket.on('aovivo:estado', (s: SessaoAoVivo) => useAoVivo.getState().receber(s));
+  socket.on('aovivo:convite', (s: SessaoAoVivo) => useAoVivo.getState().receber(s));
+  socket.on('aovivo:encerrado', ({ id }: { id: string }) => useAoVivo.getState().encerrada(id));
   socket.on('presenca', (dados: { usuarioId: number; online: boolean }) => {
     window.dispatchEvent(new CustomEvent(EVENTO_PRESENCA, { detail: dados }));
   });
@@ -178,4 +185,5 @@ export function desconectarTempoReal() {
   socket?.disconnect();
   socket = null;
   useDuelo.setState({ ...INICIAL, convite: null });
+  useAoVivo.setState({ sessao: null, dispensado: null });
 }

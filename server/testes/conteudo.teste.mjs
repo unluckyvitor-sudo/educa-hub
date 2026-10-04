@@ -14,7 +14,20 @@ const QUESTOES = [
   ['Teste: quanto é 3 elevado a 2?', '9', ['6', '5', '27']],
 ];
 const NOSSAS = new Set(QUESTOES.map((q) => q[0]));
-const criados = [];
+const adm = senhaAdmin ? await entrar('admin', senhaAdmin) : null;
+
+/** Remove tudo o que este teste cria (inclusive o que sobrou de uma execução interrompida no meio). */
+async function limparSobras() {
+  for (const serie of ['F6', 'M2']) {
+    const materias = (await prof.get(`/biblioteca?serie=${serie}`)).dados.materias;
+    for (const t of materias.flatMap((m) => m.topicos)) if (t.titulo.startsWith('Teste —')) await prof.apagar(`/conteudo/topicos/${t.id}`);
+  }
+  for (const conta of [prof, adm].filter(Boolean)) {
+    const base = (await conta.get('/conteudo/topicos/F6.matematica.1')).dados;
+    for (const q of base.questoes) if (q.enunciado.startsWith('Teste:') && q.editavel) await conta.apagar(`/conteudo/questoes/${q.id}`);
+  }
+}
+await limparSobras();
 
 /** Joga uma partida inteira; `responder` recebe o item e devolve a resposta (null = deixar o tempo acabar). */
 async function jogar(corpo, responder) {
@@ -38,7 +51,6 @@ try {
   const novo = await prof.post('/conteudo/topicos', { serie: 'F6', materia: 'matematica', titulo: 'Teste — Potências', resumo: 'Potência é uma multiplicação de fatores iguais.' });
   verificar(novo.status === 201 && /^x\d+$/.test(novo.dados.id), 'professora cria um tópico');
   const topicoId = novo.dados.id;
-  criados.push(topicoId);
 
   const daMateria = async (conta, materia = 'matematica') => (await conta.get(`/materias/${materia}`)).dados.topicos;
   verificar(!(await daMateria(aluno)).some((t) => t.id === topicoId), 'tópico sem questões (rascunho) não aparece para o aluno');
@@ -66,7 +78,6 @@ try {
   verificar((await daMateria(aluno)).some((t) => t.id === topicoId && t.extra && t.questoes === 4), 'aluno da turma vê o tópico novo');
   verificar((await daMateria(aluno)).find((t) => t.id === 'F6.matematica.1').questoes === 5, 'aluno da turma recebe a questão extra no tópico antigo');
   const foraDaTurma = await prof.post('/conteudo/topicos', { serie: 'M2', materia: 'matematica', titulo: 'Teste — fora da turma' });
-  criados.push(foraDaTurma.dados.id);
   for (const [enunciado, correta, erradas] of QUESTOES) await prof.post(`/conteudo/topicos/${foraDaTurma.dados.id}/questoes`, { enunciado, correta, erradas });
   verificar(!(await daMateria(deFora)).some((t) => t.id === foraDaTurma.dados.id), 'aluno de fora das turmas da professora não vê o conteúdo dela');
   verificar((await deFora.post('/jogos/iniciar', { topicoId: foraDaTurma.dados.id, modo: 'quiz' })).status === 400, 'e também não consegue jogar pelo endereço direto');
@@ -109,12 +120,16 @@ try {
   // ── Dificuldades da turma ──
   const turma = (await prof.get('/prof/turmas')).dados.turmas[0];
   const dificuldades = (await prof.get(`/prof/turmas/${turma.id}/dificuldades`)).dados.questoes;
-  verificar(dificuldades.some((d) => NOSSAS.has(d.enunciado) && d.erros >= 1 && d.taxa > 0), 'a professora vê as questões em que a turma mais erra');
+  // A lista traz só as mais erradas, então as questões deste teste podem não caber nela: confere-se a forma e a ordem.
+  verificar(
+    dificuldades.length > 0 && dificuldades.every((d) => d.enunciado && d.correta && d.erros >= 1 && d.respostas >= 3 && d.erros <= d.respostas),
+    'a professora vê as questões em que a turma mais erra',
+  );
+  verificar(dificuldades.every((d, i) => i === 0 || dificuldades[i - 1].taxa >= d.taxa), 'da maior taxa de erro para a menor');
   verificar((await aluno.get(`/prof/turmas/${turma.id}/dificuldades`)).status === 403, 'aluno não vê o relatório da turma');
 
   // ── Publicação pelo administrador ──
-  if (senhaAdmin) {
-    const adm = await entrar('admin', senhaAdmin);
+  if (adm) {
     const fora = foraDaTurma.dados.id;
     verificar((await adm.put(`/conteudo/topicos/${fora}`, { titulo: 'Teste — fora da turma', publico: true })).status === 200, 'administrador publica o tópico da professora');
     verificar((await daMateria(deFora)).some((t) => t.id === fora), 'depois de publicado, qualquer aluno do nível vê');
@@ -128,9 +143,10 @@ try {
   verificar((await prof.apagar(`/conteudo/questoes/${extraNoBase}`)).status === 200, 'professora exclui a própria questão');
 } finally {
   // Remove o que o teste criou, mesmo quando alguma verificação falha.
-  for (const id of criados) await prof.apagar(`/conteudo/topicos/${id}`);
+  await limparSobras();
   const sobras = (await prof.get('/biblioteca?serie=F6')).dados.materias.flatMap((m) => m.topicos).filter((t) => t.titulo.startsWith('Teste —'));
-  console.log(sobras.length ? `ATENÇÃO: sobraram ${sobras.length} tópicos de teste` : 'tópicos de teste removidos');
+  const questoesDeTeste = (await prof.get('/conteudo/topicos/F6.matematica.1')).dados.questoes.filter((q) => q.enunciado.startsWith('Teste:'));
+  console.log(sobras.length || questoesDeTeste.length ? `ATENÇÃO: sobraram ${sobras.length} tópicos e ${questoesDeTeste.length} questões de teste` : 'conteúdo de teste removido');
 }
 
 console.log('\nEditor de conteúdo e caderno de erros: tudo certo.');

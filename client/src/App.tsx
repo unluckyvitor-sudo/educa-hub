@@ -14,6 +14,7 @@ import { Configuracoes } from './paginas/Configuracoes';
 import { Perfil } from './paginas/Perfil';
 import { Biblioteca } from './paginas/Biblioteca';
 import { Conteudo } from './paginas/Conteudo';
+import { AoVivo, ConviteAoVivo } from './paginas/AoVivo';
 import { Ajuda } from './paginas/Ajuda';
 import { Chamado } from './paginas/Chamado';
 import { Atendimento } from './paginas/Atendimento';
@@ -157,6 +158,7 @@ export function App() {
                 <Route path="/duelo" element={<Duelo />} />
               </>
             )}
+            {(papel === 'aluno' || papel === 'professor') && <Route path="/aovivo" element={<AoVivo />} />}
             <Route element={<Layout />}>
               {papel === 'aluno' && (
                 <>
@@ -205,6 +207,7 @@ export function App() {
         )}
       </Routes>
       {papel === 'aluno' && <ConviteDeDuelo />}
+      {papel === 'aluno' && <ConviteAoVivo />}
       <Avisos />
     </>
   );

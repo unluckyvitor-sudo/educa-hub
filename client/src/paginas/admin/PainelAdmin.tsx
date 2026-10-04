@@ -170,7 +170,7 @@ export function PainelAdmin() {
                 <strong>Cópia de segurança</strong>
                 <div className="suave pequeno">
                   {dados.copias.ultima
-                    ? `Última: ${haQuantoTempo(dados.copias.ultima.criadaEm)} · ${(dados.copias.ultima.tamanho / 1024 / 1024).toFixed(1)} MB · ${dados.copias.total} guardadas`
+                    ? `Última: ${haQuantoTempo(dados.copias.ultima.criadaEm)} · ${(dados.copias.ultima.tamanho / 1024 / 1024).toFixed(1)} MB · ${dados.copias.total} guardadas.`
                     : 'Nenhuma cópia ainda.'}{' '}
                   Uma por dia é feita sozinha; as {dados.copias.manter} mais recentes ficam em <code>{dados.copias.pasta}</code>.
                 </div>

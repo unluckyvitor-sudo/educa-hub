@@ -53,7 +53,7 @@ export function ListaDeAtividades({ atividades, comAluno = false }: { atividades
               </strong>
               <span className="suave pequeno">
                 {a.materia ? `${a.materia} · ` : ''}
-                {a.modo === 'revisao' ? 'Caderno de erros' : (MODOS[a.modo]?.nome ?? a.modo)} · {haQuantoTempo(a.quando)}
+                {a.modo === 'revisao' ? 'Caderno de erros' : a.modo === 'aovivo' ? 'Quiz ao vivo' : (MODOS[a.modo]?.nome ?? a.modo)} · {haQuantoTempo(a.quando)}
               </span>
             </div>
           </li>

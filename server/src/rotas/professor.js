@@ -4,7 +4,7 @@ import { Router } from 'express';
 import { db, diaLocal, diasAtras, inicioDaSemana } from '../db.js';
 import { exigirPapel, resumoPublico, texto, inteiro, ErroDeEntrada } from '../auth.js';
 import { MATERIAS, SERIE_POR_ID, serieValida, materiasDaSerie } from '../conteudo/index.js';
-import { tituloDoTopico, dificuldadesDe } from '../acervo.js';
+import { tituloDaAtividade, dificuldadesDe } from '../acervo.js';
 import { andamentoNaMissao, LIMITE_RECOMPENSA_PROFESSOR } from '../regras.js';
 import { buscarUsuario, professorDoAluno, estatisticasDoAluno } from '../consultas.js';
 import { estaOnline, notificar } from '../tempoReal.js';
@@ -55,7 +55,7 @@ function formatarAtividade(a) {
     alunoId: a.usuario_id,
     aluno: a.aluno,
     materia: MATERIAS[a.materia] ?? null,
-    titulo: a.missao ?? tituloDoTopico(a.topico_id) ?? (a.modo === 'revisao' ? 'Caderno de erros' : 'Atividade'),
+    titulo: tituloDaAtividade(a),
     modo: a.modo,
     acertos: a.acertos,
     total: a.total,

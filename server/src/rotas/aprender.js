@@ -5,7 +5,7 @@ import { db, diaLocal, diasAtras } from '../db.js';
 import { exigirLogin, ErroDeEntrada } from '../auth.js';
 import { ETAPAS, SERIES, MATERIAS, MODOS, embaralhar, serieValida } from '../conteudo/index.js';
 import {
-  materiasPara, topicosPara, topicoPara, tituloDoTopico, visaoDe,
+  materiasPara, topicosPara, topicoPara, tituloDaAtividade, visaoDe,
   registrarResposta, errosPendentes, resumoDosErros, ultimasRespostas,
 } from '../acervo.js';
 import { recompensaAtividade, concederGanho, registrarDiaAtivo, infoNivel, infoSequencia } from '../regras.js';
@@ -362,7 +362,7 @@ export function progressoDoAluno(aluno) {
       id: a.id,
       materia: MATERIAS[a.materia] ?? null,
       materiaId: a.materia,
-      titulo: a.missao ?? tituloDoTopico(a.topico_id) ?? (a.modo === 'revisao' ? 'Caderno de erros' : 'Atividade'),
+      titulo: tituloDaAtividade(a),
       modo: a.modo,
       acertos: a.acertos,
       total: a.total,

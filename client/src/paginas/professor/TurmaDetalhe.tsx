@@ -10,6 +10,8 @@ import { Icone, Chama } from '../../componentes/Icone';
 import { Retrato } from '../../componentes/Retrato';
 import { ListaDeAtividades } from '../../componentes/VisaoProgresso';
 import { FormMissao } from './FormMissao';
+import { FormAoVivo } from '../AoVivo';
+import { useAoVivo } from '../../aoVivo';
 import { copiarCodigo } from './Turmas';
 import type { AtividadeRecente, Dificuldade, Estatisticas, MissaoProfessor, PosicaoRanking, ResumoUsuario, Turma } from '../../tipos';
 
@@ -123,6 +125,8 @@ export function TurmaDetalhe() {
   const [aba, setAba] = useState<Aba>('alunos');
   const [periodo, setPeriodo] = useState<'semana' | 'total'>('semana');
   const [novaMissao, setNovaMissao] = useState(false);
+  const [abrirAoVivo, setAbrirAoVivo] = useState(false);
+  const aoVivo = useAoVivo((s) => s.sessao);
 
   useEffect(() => {
     window.addEventListener(EVENTO_PRESENCA, recarregar);
@@ -173,6 +177,16 @@ export function TurmaDetalhe() {
           </p>
         </div>
         <div className="acoes">
+          {!admin &&
+            (aoVivo?.conduz ? (
+              <Link className="botao rosa" to="/aovivo">
+                <Icone nome="jogar" tamanho={18} /> Voltar ao quiz ao vivo
+              </Link>
+            ) : (
+              <button className="botao rosa" onClick={() => setAbrirAoVivo(true)} disabled={membros.length === 0} title={membros.length === 0 ? 'A turma ainda não tem alunos' : 'Conduzir um quiz com a turma toda ao mesmo tempo'}>
+                <Icone nome="raio" tamanho={18} /> Quiz ao vivo
+              </button>
+            ))}
           <button className="turma-codigo linha-unica" onClick={() => copiarCodigo(turma.codigo)} title="Copiar código da turma">
             <span>Código</span>
             <strong>{turma.codigo}</strong>
@@ -302,6 +316,7 @@ export function TurmaDetalhe() {
         {aba === 'dificuldades' && <Dificuldades turmaId={turma.id} />}
       </section>
 
+      <FormAoVivo aberto={abrirAoVivo} aoFechar={() => setAbrirAoVivo(false)} turma={turma} materias={dados.materias} />
       <FormMissao aberto={novaMissao} aoFechar={() => setNovaMissao(false)} aoCriar={recarregar} turmas={[turma]} turmaFixa={turma.id} materias={dados.materias} />
     </div>
   );
