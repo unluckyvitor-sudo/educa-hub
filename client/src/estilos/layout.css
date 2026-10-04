@@ -434,12 +434,13 @@
     gap: 8px;
   }
 
-  .busca {
+  /* Só a busca do cabeçalho some; a da Biblioteca continua na página. */
+  .topo .busca {
     display: none;
   }
 
-  .topo-fichas {
-    margin-left: auto;
+  .topo-marca {
+    margin-right: auto;
   }
 
   .ficha {

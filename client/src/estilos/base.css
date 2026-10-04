@@ -541,9 +541,21 @@ textarea.entrada {
 }
 
 .pessoa-sub {
+  display: block;
   font-size: 13px;
   color: var(--tinta-suave);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pessoa > :last-child {
+  min-width: 0;
+}
+
+/* Em linhas que quebram, o nome guarda espaço e os botões passam para baixo quando não cabem. */
+.linha.quebra > .pessoa.cresce {
+  flex: 1 1 210px;
 }
 
 /* ───────── Janela modal ───────── */

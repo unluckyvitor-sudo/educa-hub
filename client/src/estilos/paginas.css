@@ -175,9 +175,59 @@
     height: 300px;
   }
   .acesso-fala {
-    top: 70px;
+    top: 96px; /* abaixo do logo */
     font-size: 16px;
     padding: 10px 18px;
+  }
+}
+
+/* Celular: palco baixo, com o gato à esquerda e a fala ao lado, para o botão de entrar aparecer sem rolar. */
+@media (max-width: 560px) {
+  .acesso-palco {
+    min-height: 232px;
+    padding: 16px 18px;
+  }
+  .acesso-palco > .logo {
+    transform: scale(0.72);
+    transform-origin: left top;
+  }
+  .acesso-palco .rb {
+    display: none;
+  }
+  .acesso-gato {
+    left: 32%;
+    bottom: 0;
+    width: 62%;
+    height: 178px;
+  }
+  .acesso-fala {
+    top: 78px;
+    left: auto;
+    right: 14px;
+    transform: none;
+    max-width: 44%;
+    font-size: 14px;
+    padding: 9px 13px;
+    border-radius: 16px;
+  }
+  .acesso-fala::after {
+    left: -6px;
+    bottom: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translateY(50%) rotate(45deg);
+  }
+  .acesso-onda {
+    height: 54px;
+  }
+  .acesso-form {
+    padding: 20px 18px 28px;
+  }
+  .acesso-cartao {
+    gap: 12px;
+  }
+  .acesso-cartao h1 {
+    font-size: 28px;
   }
 }
 
@@ -523,6 +573,36 @@
   }
   .inicio-titulo p {
     font-size: 15px;
+  }
+}
+
+/* Celular: cartões de matéria estreitos — nome e seta menores para a seta não ficar cortada. */
+@media (max-width: 560px) {
+  .inicio-materias {
+    padding: 18px 14px;
+  }
+  .materia {
+    padding: 12px;
+  }
+  .materia-rodape {
+    gap: 6px;
+  }
+  .materia-rodape strong {
+    font-size: clamp(13px, 4vw, 16px);
+  }
+  .materia-seta {
+    width: 30px;
+    height: 30px;
+  }
+  .materia-seta svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 340px) {
+  .materia-seta {
+    display: none;
   }
 }
 

@@ -635,16 +635,14 @@
 @media (max-width: 980px) {
   .jogo-palco {
     grid-template-columns: 1fr;
+    align-content: start; /* sem isto, a sobra de altura abre um vão entre o gato e o jogo */
     padding: 16px 14px 24px;
   }
   .jogo-gato {
     position: relative;
     top: 0;
-    height: 200px;
+    height: 150px;
     order: -1;
-  }
-  .alternativas {
-    grid-template-columns: 1fr;
   }
   .memoria-grade {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -667,5 +665,41 @@
   }
   .lutador-pontos {
     font-size: 30px;
+  }
+}
+
+/* Celular: tudo mais compacto, com as alternativas em uma coluna. */
+@media (max-width: 620px) {
+  .jogo-topo {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .jogo-titulo {
+    font-size: 17px;
+  }
+  .jogo-palco {
+    padding: 8px 12px 20px;
+    gap: 4px;
+  }
+  .jogo-gato {
+    height: 112px;
+  }
+  .quiz,
+  .memoria {
+    gap: 10px;
+  }
+  .quiz-cartao {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 22px;
+  }
+  .alternativas {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .alternativa {
+    min-height: 54px;
+    padding: 8px 12px;
+    font-size: 16px;
   }
 }
