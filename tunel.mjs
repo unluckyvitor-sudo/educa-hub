@@ -1,6 +1,7 @@
 // Abre um endereço público temporário (com HTTPS) para a plataforma que roda neste computador, usando o cloudflared.
 // Uso: npm run tunel      (Ctrl+C encerra o endereço; o computador precisa ficar ligado enquanto os testes durarem)
 import { spawn, spawnSync } from 'node:child_process';
+import { Resolver } from 'node:dns/promises';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,14 +60,29 @@ if (await servidorResponde()) {
   }
 }
 
+/** Espera o nome novo existir no DNS público: abrir o endereço cedo demais faz o DNS da rede guardar um "não existe" por cerca de um minuto. */
+async function esperarNome(endereco) {
+  const dns = new Resolver({ timeout: 2000, tries: 1 });
+  dns.setServers(['1.1.1.1', '8.8.8.8']);
+  for (let i = 0; i < 30; i++) {
+    try {
+      await dns.resolve4(new URL(endereco).hostname);
+      return;
+    } catch {
+      await new Promise((ok) => setTimeout(ok, 1000));
+    }
+  }
+}
+
 console.log('Abrindo o endereço público...');
 const tunel = spawn(cloudflared, ['tunnel', '--no-autoupdate', '--url', LOCAL], { stdio: ['ignore', 'pipe', 'pipe'] });
 filhos.push(tunel);
 let anunciado = false;
-const ler = (dados) => {
+const ler = async (dados) => {
   const endereco = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/.exec(String(dados))?.[0];
   if (!endereco || anunciado) return;
   anunciado = true;
+  await esperarNome(endereco);
   console.log(
     [
       '',
