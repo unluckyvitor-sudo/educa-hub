@@ -1,0 +1,12 @@
+.git
+.claude
+node_modules
+**/node_modules
+client/dist
+server/testes
+dados
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env

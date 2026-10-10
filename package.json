@@ -14,7 +14,8 @@
     "seed": "npm run seed -w server",
     "admin:senha": "npm run admin:senha -w server",
     "backup": "npm run backup -w server --",
-    "tunel": "node tunel.mjs"
+    "tunel": "node tunel.mjs",
+    "publicar": "npx -y @railway/cli up --detach"
   },
   "engines": {
     "node": ">=24"

@@ -204,7 +204,41 @@ npm run tunel
 
 O comando mostra o endereço (algo como `https://palavras-aleatorias.trycloudflare.com`). Ele vale enquanto a janela ficar aberta, muda a cada vez que o túnel é ligado e depende de o computador continuar ligado. Os dados continuam na pasta de dados deste computador. Quem tiver o endereço chega à tela de entrada: troque a senha inicial do administrador e exclua as contas de demonstração antes de divulgar.
 
-**Para deixar no ar de vez**, em uma hospedagem de aplicações Node:
+**Para deixar no ar de vez**, em uma hospedagem de aplicações Node. O projeto já traz um `Dockerfile` (constrói a interface e monta uma imagem só com o servidor, com o banco em `/dados` e o fuso de Brasília) e o `railway.json` usado pelo [Railway](https://railway.com):
+
+```bash
+npx @railway/cli login
+```
+
+```bash
+npx @railway/cli init --name educa-hub
+```
+
+```bash
+npx @railway/cli add --service educa-hub --variables "EDUCAHUB_PROXY=1"
+```
+
+```bash
+npx @railway/cli service link educa-hub
+```
+
+```bash
+npx @railway/cli volume add --mount-path /dados
+```
+
+```bash
+npx @railway/cli domain
+```
+
+Daí em diante, cada nova versão sobe com:
+
+```bash
+npm run publicar
+```
+
+O disco (`volume`) é o que guarda o banco entre uma publicação e outra: sem ele, tudo se apaga a cada versão nova. Enquanto a versão nova liga, o endereço fica fora do ar por alguns instantes, e duelos e quizzes ao vivo em andamento são interrompidos.
+
+Em outra hospedagem, sem contêiner:
 
 1. Comando de construção: `npm install && npm run build`. Comando para iniciar: `npm start`. Versão do Node: 24 ou mais nova.
 2. Um disco persistente, com a variável `EDUCAHUB_DADOS` apontando para ele (por exemplo `/dados`).
@@ -215,7 +249,8 @@ O comando mostra o endereço (algo como `https://palavras-aleatorias.trycloudfla
 | `PORT` | Porta do servidor (a hospedagem costuma definir sozinha). |
 | `EDUCAHUB_DADOS` | Pasta do banco e das cópias de segurança. Precisa estar no disco persistente. |
 | `EDUCAHUB_PROXY` | Use `1` quando houver um proxy da hospedagem na frente (é o caso comum). Sem isso o cookie de sessão não é marcado como seguro e todos os visitantes parecem vir do mesmo endereço. |
-| `EDUCAHUB_ADMIN_SENHA` | Senha inicial do `admin` (mínimo de 10 caracteres), usada só na primeira vez que o servidor liga. Troque-a em Configurações depois. |
+| `EDUCAHUB_ADMIN_SENHA` | Senha inicial do `admin` (mínimo de 10 caracteres). Pode ser definida antes ou depois de o servidor ligar pela primeira vez: ela vale enquanto a senha sorteada não tiver sido trocada. Troque-a em Configurações depois do primeiro acesso; a partir daí a variável não tem mais efeito e pode ser removida. |
+| `TZ` | Fuso que define quando o dia vira (sequência, missões do dia). O `Dockerfile` usa `America/Sao_Paulo`. |
 | `EDUCAHUB_RESPONSAVEL`, `EDUCAHUB_CONTATO` | Quem responde pela instalação e como falar com essa pessoa (aparecem nos termos). |
 | `EDUCAHUB_COPIAS` | Outra pasta para as cópias de segurança (opcional). |
 

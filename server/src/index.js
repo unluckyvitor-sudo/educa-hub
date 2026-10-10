@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { db, PASTA_DADOS } from './db.js';
-import { carregarUsuario, gerarHash, limparSessoesVencidas, ErroDeEntrada } from './auth.js';
+import { carregarUsuario, gerarHash, conferirSenha, encerrarSessoesDoUsuario, limparSessoesVencidas, ErroDeEntrada } from './auth.js';
 import { iniciarTempoReal } from './tempoReal.js';
 import { limitar, MINUTO, HORA } from './limites.js';
 import { limparRegistrosAntigos } from './registro.js';
@@ -23,22 +23,40 @@ import rotasAoVivo from './rotas/aoVivo.js';
 const PORTA = Number(process.env.PORT) || 3001;
 const PASTA_CLIENTE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'client', 'dist');
 
+/** Troca a senha sorteada, se ainda estiver em uso, pela de EDUCAHUB_ADMIN_SENHA e apaga o arquivo que a guardava. */
+async function trocarSenhaSorteada(nova, arquivo) {
+  const sorteada = /Senha: (\S+)/.exec(fs.readFileSync(arquivo, 'utf8'))?.[1];
+  const admin = db.prepare("SELECT id, senha_hash FROM usuarios WHERE usuario = 'admin' AND papel = 'admin'").get();
+  if (!sorteada || !admin || !(await conferirSenha(sorteada, admin.senha_hash))) return;
+  db.prepare('UPDATE usuarios SET senha_hash = ? WHERE id = ?').run(await gerarHash(nova), admin.id);
+  encerrarSessoesDoUsuario(admin.id);
+  fs.rmSync(arquivo);
+  console.log('A senha inicial do administrador passou a ser a de EDUCAHUB_ADMIN_SENHA. Troque-a em Configurações depois do primeiro acesso.');
+}
+
 /**
- * Na primeira execução, cria a conta de administrador. Em uma hospedagem, a senha inicial vem da variável
- * EDUCAHUB_ADMIN_SENHA (lá não dá para abrir um arquivo no servidor); sem ela, é sorteada e gravada em arquivo local.
+ * Garante a conta de administrador. Sem EDUCAHUB_ADMIN_SENHA, a senha inicial é sorteada e gravada em um arquivo da
+ * pasta de dados. Em uma hospedagem não dá para abrir esse arquivo: lá a senha vem da variável, que pode ser definida
+ * antes ou depois de o servidor ligar pela primeira vez (ela vale enquanto a senha sorteada não tiver sido trocada).
  */
 async function garantirAdministrador() {
-  if (db.prepare("SELECT 1 FROM usuarios WHERE papel = 'admin'").get()) return;
-  const definida = process.env.EDUCAHUB_ADMIN_SENHA;
+  let definida = process.env.EDUCAHUB_ADMIN_SENHA || null;
+  if (definida && definida.length < 10) {
+    console.error('EDUCAHUB_ADMIN_SENHA foi ignorada: precisa ter pelo menos 10 caracteres.');
+    definida = null;
+  }
+  const arquivo = path.join(PASTA_DADOS, 'admin-inicial.txt');
+  if (db.prepare("SELECT 1 FROM usuarios WHERE papel = 'admin'").get()) {
+    if (definida && fs.existsSync(arquivo)) await trocarSenhaSorteada(definida, arquivo);
+    return;
+  }
   if (definida) {
-    if (definida.length < 10) throw new Error('EDUCAHUB_ADMIN_SENHA precisa ter pelo menos 10 caracteres.');
     db.prepare("INSERT INTO usuarios (papel, nome, usuario, senha_hash) VALUES ('admin', 'Administrador', 'admin', ?)").run(await gerarHash(definida));
     console.log('Conta de administrador criada com a senha de EDUCAHUB_ADMIN_SENHA. Troque-a em Configurações depois do primeiro acesso.');
     return;
   }
   const senha = crypto.randomBytes(9).toString('base64url');
   db.prepare("INSERT INTO usuarios (papel, nome, usuario, senha_hash) VALUES ('admin', 'Administrador', 'admin', ?)").run(await gerarHash(senha));
-  const arquivo = path.join(PASTA_DADOS, 'admin-inicial.txt');
   fs.writeFileSync(
     arquivo,
     `EDUCA HUB — acesso de administrador\n\nUsuário: admin\nSenha: ${senha}\n\nTroque a senha em Configurações (ou com "npm run admin:senha") e apague este arquivo.\n`,
@@ -123,4 +141,10 @@ setInterval(faxina, 6 * HORA).unref();
 
 servidor.listen(PORTA, () => {
   console.log(`EDUCA HUB — servidor em http://localhost:${PORTA}`);
+});
+
+// Uma hospedagem encerra o processo com SIGTERM a cada nova publicação: fecha o banco e sai, sem esperar ser derrubado.
+process.on('SIGTERM', () => {
+  db.close();
+  process.exit(0);
 });
