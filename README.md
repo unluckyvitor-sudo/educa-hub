@@ -204,7 +204,7 @@ npm run tunel
 
 O comando mostra o endereço (algo como `https://palavras-aleatorias.trycloudflare.com`). Ele vale enquanto a janela ficar aberta, muda a cada vez que o túnel é ligado e depende de o computador continuar ligado. Os dados continuam na pasta de dados deste computador. Quem tiver o endereço chega à tela de entrada: troque a senha inicial do administrador e exclua as contas de demonstração antes de divulgar.
 
-**Para deixar no ar de vez**, em uma hospedagem de aplicações Node. O projeto já traz um `Dockerfile` (constrói a interface e monta uma imagem só com o servidor, com o banco em `/dados` e o fuso de Brasília) e o `railway.json` usado pelo [Railway](https://railway.com):
+**Para deixar no ar de vez**, em uma hospedagem de aplicações Node. O projeto já traz um `Dockerfile` (constrói a interface e monta uma imagem só com o servidor, com o banco em `/dados` e o fuso de Brasília), que o [Railway](https://railway.com) detecta sozinho:
 
 ```bash
 npx @railway/cli login
@@ -240,7 +240,14 @@ No Git Bash, o caminho `/dados` do comando do disco é convertido para uma pasta
 
 A senha do administrador é definida no painel do Railway (serviço → Variables → `EDUCAHUB_ADMIN_SENHA`), não pela linha de comando.
 
-O disco (`volume`) é o que guarda o banco entre uma publicação e outra: sem ele, tudo se apaga a cada versão nova. O Railway avisa que deixa de ler o `railway.json` em 2026-12-01 (o substituto é o `.railway/railway.ts`); sem ele o `Dockerfile` continua sendo usado, mas a verificação de saúde em `/api/catalogo` precisa ser recriada nas configurações do serviço. Enquanto a versão nova liga, o endereço fica fora do ar por alguns instantes, e duelos e quizzes ao vivo em andamento são interrompidos.
+As demais opções ficam nas configurações do serviço (painel → serviço → Settings), não em arquivo: em serviços novos o Railway não lê mais o `railway.json`. As que valem a pena:
+
+- **Healthcheck Path** `/api/catalogo`: a publicação só é dada como concluída quando o servidor responde.
+- **Serverless** (opcional): o servidor dorme depois de 5 a 10 minutos sem acessos e acorda sozinho no primeiro acesso, que demora mais e pode falhar uma vez (erro 502; basta recarregar). Reduz o consumo quando o site fica parado. Enquanto alguém estiver com a plataforma aberta e logado, a conexão em tempo real mantém o servidor acordado.
+
+Uma opção alterada só vale a partir de uma publicação nova (`npm run publicar`): o botão de reimplantar repete a configuração da publicação anterior.
+
+O disco (`volume`) é o que guarda o banco entre uma publicação e outra: sem ele, tudo se apaga a cada versão nova. Enquanto a versão nova liga, o endereço fica fora do ar por alguns instantes, e duelos e quizzes ao vivo em andamento são interrompidos.
 
 Em outra hospedagem, sem contêiner:
 
