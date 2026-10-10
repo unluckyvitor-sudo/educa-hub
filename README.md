@@ -236,7 +236,11 @@ Daí em diante, cada nova versão sobe com:
 npm run publicar
 ```
 
-O disco (`volume`) é o que guarda o banco entre uma publicação e outra: sem ele, tudo se apaga a cada versão nova. Enquanto a versão nova liga, o endereço fica fora do ar por alguns instantes, e duelos e quizzes ao vivo em andamento são interrompidos.
+No Git Bash, o caminho `/dados` do comando do disco é convertido para uma pasta do Windows: rode esse comando no PowerShell ou com `MSYS_NO_PATHCONV=1` na frente.
+
+A senha do administrador é definida no painel do Railway (serviço → Variables → `EDUCAHUB_ADMIN_SENHA`), não pela linha de comando.
+
+O disco (`volume`) é o que guarda o banco entre uma publicação e outra: sem ele, tudo se apaga a cada versão nova. O Railway avisa que deixa de ler o `railway.json` em 2026-12-01 (o substituto é o `.railway/railway.ts`); sem ele o `Dockerfile` continua sendo usado, mas a verificação de saúde em `/api/catalogo` precisa ser recriada nas configurações do serviço. Enquanto a versão nova liga, o endereço fica fora do ar por alguns instantes, e duelos e quizzes ao vivo em andamento são interrompidos.
 
 Em outra hospedagem, sem contêiner:
 
