@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { db, inicioDaSemana } from '../db.js';
 import { exigirLogin, exigirPapel, resumoPublico, avatarDe } from '../auth.js';
-import { SERIE_POR_ID } from '../conteudo/index.js';
+import { SERIE_POR_ID, SERIES_INATIVAS, serieEmUso } from '../conteudo/index.js';
 import { ITENS, ITEM_POR_ID } from '../loja.js';
 import { listarMissoes, resgatarMissao, infoSequencia } from '../regras.js';
 import { buscarUsuario, idsDosAmigos } from '../consultas.js';
@@ -23,7 +23,10 @@ rotas.get('/amigos', aluno, (req, res) => {
        WHERE (a.de_id = ? OR a.para_id = ?) AND u.status = 'ativo'`,
     )
     .all(eu, eu, eu);
-  const formatar = (l) => ({ ...resumoPublico(l), amizadeId: l.amizade_id, online: estaOnline(l.id), mesmoNivel: l.serie === req.usuario.serie });
+  const formatar = (l) => {
+    const publico = resumoPublico(l);
+    return { ...publico, amizadeId: l.amizade_id, online: estaOnline(l.id), mesmoNivel: publico.serie === req.usuario.serie };
+  };
   res.json({
     amigos: linhas.filter((l) => l.amizade_status === 'aceita').map(formatar).sort((a, b) => b.online - a.online || b.xp - a.xp),
     recebidos: linhas.filter((l) => l.amizade_status === 'pendente' && l.de_id !== eu).map(formatar),
@@ -119,9 +122,10 @@ rotas.get('/ranking', exigirLogin, (req, res) => {
     params = [];
     titulo = 'Todos os níveis';
   } else {
-    const serie = eu.serie ?? String(req.query.serie ?? '');
-    filtro = 'u.serie = ?';
-    params = [serie];
+    const serie = eu.serie ?? serieEmUso(String(req.query.serie ?? ''));
+    // Quem está em um nível fora de uso conta no nível que vale para ele (o primeiro ativo).
+    params = serie === serieEmUso(SERIES_INATIVAS[0]) ? [serie, ...SERIES_INATIVAS] : [serie];
+    filtro = `u.serie IN (${params.map(() => '?').join(',')})`;
     titulo = SERIE_POR_ID[serie]?.nome ?? 'Nível';
   }
   res.json({ titulo, periodo, escopo, ...montarRanking({ filtro, params, periodo, euId: eu.id }) });
@@ -175,7 +179,7 @@ rotas.get('/turmas/minhas', aluno, (req, res) => {
        WHERE tm.aluno_id = ? ORDER BY t.nome`,
     )
     .all(req.usuario.id)
-    .map((t) => ({ ...t, serieNome: SERIE_POR_ID[t.serie]?.nome }));
+    .map((t) => ({ ...t, serie: serieEmUso(t.serie), serieNome: SERIE_POR_ID[serieEmUso(t.serie)]?.nome }));
   res.json({ turmas });
 });
 
@@ -184,9 +188,9 @@ rotas.post('/turmas/entrar', aluno, limitar('turma', 10, 10 * MINUTO, 'Muitas te
   const codigo = String(req.body?.codigo ?? '').trim().toUpperCase();
   const turma = db.prepare('SELECT * FROM turmas WHERE codigo = ?').get(codigo);
   if (!turma) return res.status(404).json({ erro: 'Código de turma não encontrado. Confira com seu professor.' });
-  if (turma.serie !== req.usuario.serie) {
+  if (serieEmUso(turma.serie) !== req.usuario.serie) {
     return res.status(400).json({
-      erro: `Esta turma é de ${SERIE_POR_ID[turma.serie]?.nome}, e o seu perfil está em ${SERIE_POR_ID[req.usuario.serie]?.nome}. Ajuste seu nível em Configurações se necessário.`,
+      erro: `Esta turma é de ${SERIE_POR_ID[serieEmUso(turma.serie)]?.nome}, e o seu perfil está em ${SERIE_POR_ID[req.usuario.serie]?.nome}. Ajuste seu nível em Configurações se necessário.`,
     });
   }
   const novo = db.prepare('INSERT OR IGNORE INTO turma_membros (turma_id, aluno_id) VALUES (?, ?)').run(turma.id, req.usuario.id);

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { db } from './db.js';
-import { SERIE_POR_ID } from './conteudo/index.js';
+import { SERIE_POR_ID, comSerieEmUso } from './conteudo/index.js';
 import { AVATAR_PADRAO } from './loja.js';
 import { infoNivel, sequenciaAtual, jogouHoje } from './regras.js';
 import { limiteAtingido, contarUso, zerarLimite, MINUTO } from './limites.js';
@@ -81,13 +81,13 @@ function lerCookie(cabecalho) {
 export function usuarioDoCookie(cabecalho) {
   const token = lerCookie(cabecalho);
   if (!token) return null;
-  return (
+  return comSerieEmUso(
     db
       .prepare(
         `SELECT u.* FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id
          WHERE s.token_hash = ? AND s.expira_em > ?`,
       )
-      .get(hashDoToken(token), new Date().toISOString()) ?? null
+      .get(hashDoToken(token), new Date().toISOString()) ?? null,
   );
 }
 
@@ -143,13 +143,14 @@ export function avatarDe(usuario) {
 
 /** Dados que qualquer usuário logado pode ver sobre outro. */
 export function resumoPublico(u) {
+  const serie = comSerieEmUso(u).serie;
   return {
     id: u.id,
     papel: u.papel,
     nome: u.nome,
     usuario: u.usuario,
-    serie: u.serie,
-    serieNome: SERIE_POR_ID[u.serie]?.nome ?? null,
+    serie,
+    serieNome: SERIE_POR_ID[serie]?.nome ?? null,
     avatar: avatarDe(u),
     xp: u.xp,
     nivel: infoNivel(u.xp).nivel,
@@ -163,7 +164,7 @@ export function perfilProprio(u) {
     ...resumoPublico(u),
     status: u.status,
     email: u.email,
-    etapa: SERIE_POR_ID[u.serie]?.etapa ?? null,
+    etapa: SERIE_POR_ID[comSerieEmUso(u).serie]?.etapa ?? null,
     curso: u.curso,
     instituicao: u.instituicao,
     nascimento: u.nascimento,

@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import { coresDaMateria, MODOS } from '../../visual';
-import { Carregando, ErroDeCarga, useCarregar } from '../../componentes/comuns';
+import { Carregando, ErroDeCarga, VideoDoResumo, useCarregar } from '../../componentes/comuns';
 import { Icone } from '../../componentes/Icone';
 import { IconeMateria } from '../../componentes/IconeMateria';
 import type { Modo, Topico } from '../../tipos';
@@ -17,6 +17,11 @@ function CartaoTopico({ topico, numero }: { topico: Topico; numero: number }) {
         <span className="topico-numero">{numero}</span>
         <div className="cresce">
           <h3>{topico.titulo}</h3>
+          {topico.video && (
+            <span className="etiqueta" style={{ marginTop: 4 }}>
+              <Icone nome="jogar" tamanho={14} /> Vídeo-aula
+            </span>
+          )}
           <div className="topico-estrelas" aria-label={`${topico.concluidas} de 3 jogos concluídos`}>
             {[0, 1, 2].map((i) => (
               <Icone key={i} nome="estrela" tamanho={20} className={i < topico.concluidas ? 'cheia' : ''} />
@@ -24,10 +29,15 @@ function CartaoTopico({ topico, numero }: { topico: Topico; numero: number }) {
           </div>
         </div>
         <button className="botao claro pequeno" onClick={() => setAberto(!aberto)} aria-expanded={aberto}>
-          <Icone nome="livro" tamanho={16} /> {aberto ? 'Fechar resumo' : 'Ler resumo'}
+          <Icone nome="livro" tamanho={16} /> {aberto ? 'Fechar resumo' : topico.video ? 'Resumo e vídeo' : 'Ler resumo'}
         </button>
       </header>
-      {aberto && <p className="topico-resumo">{topico.resumo}</p>}
+      {aberto && (
+        <div className="topico-resumo">
+          <p>{topico.resumo}</p>
+          {topico.video && <VideoDoResumo src={topico.video} titulo={topico.titulo} />}
+        </div>
+      )}
       <div className="modos">
         {(Object.keys(MODOS) as Modo[]).map((modo) => {
           const melhor = topico.modos[modo];

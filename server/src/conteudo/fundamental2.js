@@ -1,5 +1,5 @@
-// Anos Finais (6º ao 9º ano). Formato de cada questão:
-// [enunciado, resposta correta, errada, errada, errada, explicação opcional]
+// Anos Finais (6º ao 9º ano). Cada tópico: t = título, r = resumo, v = vídeo do resumo (opcional, em client/public),
+// q = questões no formato [enunciado, resposta correta, errada, errada, errada, explicação opcional]
 export default [
   // ───────────── 6º ANO ─────────────
   ['F6', 'portugues', [
@@ -117,13 +117,13 @@ export default [
     ]},
   ]],
   ['F7', 'matematica', [
-    { t: 'Números inteiros e racionais', r: 'Os inteiros incluem positivos, negativos e o zero. Na multiplicação e na divisão, sinais iguais dão resultado positivo e sinais diferentes, negativo.', q: [
+    { t: 'Números inteiros e racionais', r: 'Os inteiros incluem positivos, negativos e o zero. Na multiplicação e na divisão, sinais iguais dão resultado positivo e sinais diferentes, negativo.', v: '/videos/inteiros-e-racionais.mp4', q: [
       ['Quanto é (−7) + 3?', '−4', '4', '−10', '10'],
       ['Quanto é (−3) × (−5)?', '15', '−15', '−8', '8'],
       ['Quanto é 5 − 9?', '−4', '4', '14', '−14'],
       ['Qual número é o maior?', '−2', '−5', '−10', '−7'],
     ]},
-    { t: 'Equações, razão e proporção', r: 'Equação do 1º grau é uma igualdade com incógnita. Razão é a comparação entre duas grandezas por divisão; proporção é a igualdade entre duas razões.', q: [
+    { t: 'Equações, razão e proporção', r: 'Equação do 1º grau é uma igualdade com incógnita. Razão é a comparação entre duas grandezas por divisão; proporção é a igualdade entre duas razões.', v: '/videos/equacoes-do-1-grau.mp4', q: [
       ['Qual é o valor de x em 2x + 3 = 11?', '4', '7', '5', '8'],
       ['Se 3 canetas custam R$ 12, quanto custam 5 canetas?', 'R$ 20', 'R$ 15', 'R$ 18', 'R$ 24'],
       ['Quanto é 30% de 150?', '45', '30', '50', '15'],

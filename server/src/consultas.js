@@ -1,8 +1,9 @@
 // Consultas reutilizadas por várias rotas e pelo módulo de tempo real.
 import { db } from './db.js';
+import { comSerieEmUso } from './conteudo/niveis.js';
 
 export function buscarUsuario(id) {
-  return db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id) ?? null;
+  return comSerieEmUso(db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id) ?? null);
 }
 
 export function idsDosAmigos(usuarioId) {

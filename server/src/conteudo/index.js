@@ -22,6 +22,7 @@ for (const [serie, materia, lista] of [...fundamental1, ...fundamental2, ...medi
       materia,
       titulo: bruto.t,
       resumo: bruto.r,
+      video: bruto.v ?? null,
       questoes: bruto.q.map(([enunciado, correta, e1, e2, e3, explicacao], j) => ({
         id: `${id}.${j + 1}`,
         topicoId: id,

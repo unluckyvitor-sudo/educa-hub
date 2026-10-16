@@ -64,6 +64,8 @@ export interface Topico {
   id: string;
   titulo: string;
   resumo: string;
+  /** Vídeo-aula que acompanha o resumo (endereço no próprio site). */
+  video?: string | null;
   questoes: number;
   /** Criado por um professor ou administrador pela interface. */
   extra?: boolean;

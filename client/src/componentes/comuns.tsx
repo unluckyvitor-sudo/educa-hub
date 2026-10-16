@@ -148,3 +148,12 @@ export function ErroDeCarga({ erro, aoTentar }: { erro: string; aoTentar?: () =>
     </div>
   );
 }
+
+/** Vídeo-aula que acompanha o resumo de um tópico. Até alguém apertar o play, só o começo do arquivo é baixado. */
+export function VideoDoResumo({ src, titulo }: { src: string; titulo: string }) {
+  return (
+    <video className="video-resumo" src={src} controls preload="metadata" playsInline aria-label={`Vídeo-aula: ${titulo}`}>
+      Este navegador não consegue mostrar o vídeo. <a href={src}>Baixe o vídeo</a> para assistir.
+    </video>
+  );
+}

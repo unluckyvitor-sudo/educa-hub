@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { Router } from 'express';
 import { db, diaLocal } from '../db.js';
 import { exigirLogin, exigirPapel, resumoPublico, inteiro, ErroDeEntrada } from '../auth.js';
-import { MATERIAS, embaralhar } from '../conteudo/index.js';
+import { MATERIAS, embaralhar, serieEmUso } from '../conteudo/index.js';
 import { topicoPara, topicosPara, visaoDe, registrarResposta } from '../acervo.js';
 import { concederGanho, registrarDiaAtivo } from '../regras.js';
 import { buscarUsuario } from '../consultas.js';
@@ -192,11 +192,11 @@ rotas.post('/', exigirPapel('professor'), limitar('aovivo', 20, HORA, 'Muitos qu
   let topicoId = null;
   if (corpo.topicoId) {
     const topico = topicoPara(corpo.topicoId, visao);
-    if (!topico || topico.serie !== turma.serie) throw new ErroDeEntrada('Tópico não encontrado para o nível desta turma.');
+    if (!topico || topico.serie !== serieEmUso(turma.serie)) throw new ErroDeEntrada('Tópico não encontrado para o nível desta turma.');
     ({ questoes: fonte, titulo, materia } = topico);
     topicoId = topico.id;
   } else {
-    const topicos = topicosPara(turma.serie, corpo.materia, visao);
+    const topicos = topicosPara(serieEmUso(turma.serie), corpo.materia, visao);
     if (!topicos.length) throw new ErroDeEntrada('Escolha a matéria do quiz.');
     fonte = topicos.flatMap((t) => t.questoes);
     materia = corpo.materia;

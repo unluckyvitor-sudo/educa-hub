@@ -33,6 +33,11 @@
   flex-wrap: wrap;
 }
 
+/* Em telas estreitas o botão do resumo desce para baixo do título, em vez de espremê-lo em várias linhas. */
+.topico-cabecalho .cresce {
+  min-width: 180px;
+}
+
 .topico-numero {
   flex: none;
   display: grid;
@@ -70,6 +75,21 @@
   background: #f7f7fe;
   border-left: 5px solid var(--indigo-2);
   line-height: 1.6;
+}
+
+.video-resumo {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  aspect-ratio: 16 / 9;
+  margin-top: 12px;
+  border-radius: 14px;
+  background: #0f1430;
+}
+
+.resumo .video-resumo {
+  align-self: stretch;
+  margin-top: 0;
 }
 
 .modos {

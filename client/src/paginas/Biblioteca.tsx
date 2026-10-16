@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, mensagemDoErro } from '../api';
 import { useEstado } from '../estado';
 import { coresDaMateria } from '../visual';
-import { Carregando, ErroDeCarga, Modal, Vazio, useCarregar } from '../componentes/comuns';
+import { Carregando, ErroDeCarga, Modal, Vazio, VideoDoResumo, useCarregar } from '../componentes/comuns';
 import { Icone } from '../componentes/Icone';
 import { IconeMateria } from '../componentes/IconeMateria';
 import type { Catalogo } from '../tipos';
@@ -12,6 +12,7 @@ interface TopicoDaBiblioteca {
   id: string;
   titulo: string;
   resumo: string;
+  video?: string | null;
   // Só para quem edita o conteúdo (professores e administradores):
   questoes?: number;
   extra?: boolean;
@@ -81,10 +82,13 @@ export function Biblioteca() {
   const aluno = usuario.papel === 'aluno';
   const [parametros, setParametros] = useSearchParams();
   const busca = parametros.get('q') ?? '';
-  const serie = parametros.get('serie') ?? 'F6';
+  // Sem nível na URL, o servidor escolhe o primeiro em uso nesta instalação.
+  const pedida = parametros.get('serie') ?? '';
   const [novoEm, setNovoEm] = useState<{ id: string; nome: string } | null>(null);
   const { dados: catalogo } = useCarregar(() => (aluno ? Promise.resolve(null) : api<Catalogo>('/catalogo')));
-  const { dados, erro, recarregar } = useCarregar(() => api<Dados>(`/biblioteca${aluno ? '' : `?serie=${serie}`}`), [serie]);
+  const { dados, erro, recarregar } = useCarregar(() => api<Dados>(`/biblioteca${aluno || !pedida ? '' : `?serie=${pedida}`}`), [pedida]);
+  // Um nível fora de uso na URL (link antigo) dá lugar ao que o servidor escolheu.
+  const serie = catalogo?.series.some((s) => s.id === pedida) ? pedida : dados?.serie || pedida;
 
   const mudar = (campo: 'q' | 'serie', valor: string) => {
     const novos = new URLSearchParams(parametros);
@@ -167,6 +171,7 @@ export function Biblioteca() {
                     <article key={t.id} className="resumo">
                       <h3>{t.titulo}</h3>
                       <p>{t.resumo || <span className="suave">Sem resumo ainda.</span>}</p>
+                      {t.video && <VideoDoResumo src={t.video} titulo={t.titulo} />}
                       {aluno ? (
                         <Link className="botao pequeno claro" to={`/jogar/${t.id}/quiz`}>
                           <Icone nome="raio" tamanho={16} /> Testar o que aprendi

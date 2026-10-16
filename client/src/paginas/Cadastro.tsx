@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, mensagemDoErro } from '../api';
 import { useEstado } from '../estado';
@@ -9,8 +9,13 @@ import type { Catalogo, Papel, Usuario } from '../tipos';
 
 /** Escolha do nível de ensino: primeiro a etapa, depois a série (ou área, no superior). */
 export function SeletorDeNivel({ catalogo, serie, aoMudar }: { catalogo: Catalogo; serie: string; aoMudar: (serie: string) => void }) {
-  const etapaAtual = catalogo.series.find((s) => s.id === serie)?.etapa ?? '';
+  // Instalação com um nível só (demonstração): ele já vem escolhido.
+  const unica = catalogo.series.length === 1 ? catalogo.series[0].id : null;
+  const etapaAtual = catalogo.series.find((s) => s.id === (serie || unica))?.etapa ?? '';
   const [etapa, setEtapa] = useState(etapaAtual);
+  useEffect(() => {
+    if (unica && serie !== unica) aoMudar(unica);
+  }, [unica, serie, aoMudar]);
   const series = catalogo.series.filter((s) => s.etapa === etapa);
 
   return (

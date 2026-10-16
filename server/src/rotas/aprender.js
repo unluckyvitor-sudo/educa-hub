@@ -3,10 +3,10 @@ import crypto from 'node:crypto';
 import { Router } from 'express';
 import { db, diaLocal, diasAtras } from '../db.js';
 import { exigirLogin, ErroDeEntrada } from '../auth.js';
-import { ETAPAS, SERIES, MATERIAS, MODOS, embaralhar, serieValida } from '../conteudo/index.js';
+import { ETAPAS_ATIVAS, SERIES_ATIVAS, MATERIAS, MODOS, embaralhar, serieValida, serieEmUso } from '../conteudo/index.js';
 import {
   materiasPara, topicosPara, topicoPara, tituloDaAtividade, visaoDe,
-  registrarResposta, errosPendentes, resumoDosErros, ultimasRespostas,
+  registrarResposta, errosPendentes, resumoDosErros, totalNoCaderno, ultimasRespostas,
 } from '../acervo.js';
 import { recompensaAtividade, concederGanho, registrarDiaAtivo, infoNivel, infoSequencia } from '../regras.js';
 import { buscarUsuario, estatisticasDoAluno } from '../consultas.js';
@@ -22,7 +22,7 @@ const QUESTOES_POR_REVISAO = 8; // caderno de erros
 /** Série cujo conteúdo o usuário enxerga (professores e admin podem escolher via ?serie=). */
 function serieDoPedido(req) {
   if (req.usuario.papel === 'aluno') return req.usuario.serie;
-  return serieValida(req.query.serie) ? req.query.serie : 'F6';
+  return serieValida(req.query.serie) ? req.query.serie : serieEmUso('F6');
 }
 
 /** Melhor aproveitamento do aluno por tópico e modo: { "F6.matematica.1": { quiz: 0.75 } } */
@@ -42,7 +42,7 @@ const concluidasNoTopico = (resultados, topicoId) =>
   MODOS.filter((modo) => (resultados[topicoId]?.[modo] ?? 0) >= NOTA_MINIMA).length;
 
 rotas.get('/catalogo', (_req, res) => {
-  res.json({ etapas: ETAPAS, series: SERIES, materias: MATERIAS });
+  res.json({ etapas: ETAPAS_ATIVAS, series: SERIES_ATIVAS, materias: MATERIAS });
 });
 
 rotas.get('/materias', exigirLogin, (req, res) => {
@@ -61,7 +61,7 @@ rotas.get('/materias', exigirLogin, (req, res) => {
     total: materias.reduce((soma, m) => soma + m.total, 0),
     concluidas: materias.reduce((soma, m) => soma + m.concluidas, 0),
     // Questões esperando revisão no caderno de erros.
-    erros: req.usuario.papel === 'aluno' ? db.prepare('SELECT COUNT(*) AS n FROM erros WHERE usuario_id = ?').get(req.usuario.id).n : 0,
+    erros: req.usuario.papel === 'aluno' ? totalNoCaderno(req.usuario.id) : 0,
   });
 });
 
@@ -76,6 +76,7 @@ rotas.get('/materias/:id', exigirLogin, (req, res) => {
       id: t.id,
       titulo: t.titulo,
       resumo: t.resumo,
+      video: t.video ?? null,
       questoes: t.questoes.length,
       extra: !!t.extra,
       modos: Object.fromEntries(MODOS.map((modo) => [modo, Math.round((resultados[t.id]?.[modo] ?? 0) * 100)])),
@@ -96,6 +97,7 @@ rotas.get('/biblioteca', exigirLogin, (req, res) => {
         id: t.id,
         titulo: t.titulo,
         resumo: t.resumo,
+        video: t.video ?? null,
         // Para quem edita o conteúdo (professores e administradores):
         ...(visao.editor && { questoes: t.questoes.length, extra: !!t.extra, rascunho: !!t.rascunho, publico: t.extra ? t.publico : true, meu: t.autorId === req.usuario.id }),
       })),
@@ -310,7 +312,7 @@ rotas.post('/jogos/:partida/finalizar', exigirLogin, (req, res) => {
   const recompensa = recompensaAtividade(req.usuario.id, {
     topicoId: partida.topicoId, missaoId: partida.missaoId, modo: partida.modo, revisao: !!partida.revisao, acertos, total,
   });
-  resultado.noCaderno = db.prepare('SELECT COUNT(*) AS n FROM erros WHERE usuario_id = ?').get(req.usuario.id).n;
+  resultado.noCaderno = totalNoCaderno(req.usuario.id);
   db.prepare(
     `INSERT INTO atividades (usuario_id, materia, topico_id, missao_id, modo, acertos, total, xp, moedas, duracao_s, dia)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -375,7 +377,7 @@ export function progressoDoAluno(aluno) {
     moedas: aluno.moedas,
     total: materias.reduce((soma, m) => soma + m.total, 0),
     concluidas: materias.reduce((soma, m) => soma + m.concluidas, 0),
-    erros: db.prepare('SELECT COUNT(*) AS n FROM erros WHERE usuario_id = ?').get(aluno.id).n,
+    erros: totalNoCaderno(aluno.id),
     estatisticas: estatisticasDoAluno(aluno.id),
     sequencia: infoSequencia(aluno),
     materias,

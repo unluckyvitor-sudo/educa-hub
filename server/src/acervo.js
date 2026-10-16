@@ -1,7 +1,7 @@
 // Acervo: o conteúdo dos arquivos (server/src/conteudo) somado ao que professores e administradores criam pela interface,
 // e o registro das respostas de cada aluno (caderno de erros e dificuldades da turma).
 import { db, diaLocal } from './db.js';
-import { MODOS, MATERIAS, materiasDaSerie, topicoPorId as topicoDoArquivo } from './conteudo/index.js';
+import { MODOS, MATERIAS, materiasDaSerie, serieValida, topicoPorId as topicoDoArquivo } from './conteudo/index.js';
 import { idsDosProfessores } from './consultas.js';
 
 /** Um tópico criado pela interface só aparece para os alunos quando tem questões suficientes para os três jogos. */
@@ -165,7 +165,10 @@ export function registrarResposta(usuarioId, questaoId, acertou) {
   }
 }
 
-/** Questões pendentes no caderno de erros do aluno, das mais antigas para as mais novas. As que sumiram do acervo são descartadas. */
+/**
+ * Questões pendentes no caderno de erros do aluno, das mais antigas para as mais novas. As que sumiram do acervo são
+ * descartadas; as de um nível fora de uso nesta instalação (EDUCAHUB_SERIES) ficam guardadas, mas não aparecem.
+ */
 export function errosPendentes(usuarioId) {
   const pendentes = [];
   for (const linha of db.prepare('SELECT * FROM erros WHERE usuario_id = ? ORDER BY atualizado_em, questao_id').all(usuarioId)) {
@@ -174,9 +177,15 @@ export function errosPendentes(usuarioId) {
       db.prepare('DELETE FROM erros WHERE usuario_id = ? AND questao_id = ?').run(usuarioId, linha.questao_id);
       continue;
     }
+    if (!serieValida(topicoBruto(questao.topicoId)?.serie)) continue;
     pendentes.push({ questao, vezes: linha.vezes, acertosSeguidos: linha.acertos_seguidos });
   }
   return pendentes;
+}
+
+/** Quantas questões esperam revisão no caderno de erros. */
+export function totalNoCaderno(usuarioId) {
+  return errosPendentes(usuarioId).length;
 }
 
 /** Resumo do caderno de erros para as telas do aluno. */
@@ -222,7 +231,7 @@ export function dificuldadesDe(alunoIds, { minimo = 3, limite = 12 } = {}) {
     )
     .all(...alunoIds, minimo)
     .map((l) => ({ ...l, questao: questaoPorId(l.questao_id) }))
-    .filter((l) => l.questao)
+    .filter((l) => l.questao && serieValida(topicoBruto(l.questao.topicoId)?.serie))
     .slice(0, limite)
     .map((l) => ({
       id: l.questao_id,

@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { Router } from 'express';
 import { db, diaLocal, diasAtras, inicioDaSemana } from '../db.js';
 import { exigirPapel, resumoPublico, texto, inteiro, gerarHash, encerrarSessoesDoUsuario, ErroDeEntrada } from '../auth.js';
-import { MATERIAS, SERIE_POR_ID, serieValida, materiasDaSerie } from '../conteudo/index.js';
+import { MATERIAS, SERIE_POR_ID, serieValida, serieEmUso, materiasDaSerie } from '../conteudo/index.js';
 import { tituloDaAtividade, dificuldadesDe } from '../acervo.js';
 import { andamentoNaMissao, LIMITE_RECOMPENSA_PROFESSOR } from '../regras.js';
 import { buscarUsuario, professorDoAluno, estatisticasDoAluno } from '../consultas.js';
@@ -37,8 +37,8 @@ function turmaDoProfessor(req, id = req.params.id) {
 const formatarTurma = (t) => ({
   id: t.id,
   nome: t.nome,
-  serie: t.serie,
-  serieNome: SERIE_POR_ID[t.serie]?.nome,
+  serie: serieEmUso(t.serie),
+  serieNome: SERIE_POR_ID[serieEmUso(t.serie)]?.nome,
   descricao: t.descricao,
   codigo: t.codigo,
   criadoEm: t.criado_em,
@@ -163,7 +163,7 @@ rotas.get('/turmas/:id', (req, res) => {
     turma: formatarTurma(turma),
     membros,
     missoes,
-    materias: materiasDaSerie(turma.serie).map((m) => ({ id: m.id, nome: m.nome })),
+    materias: materiasDaSerie(serieEmUso(turma.serie)).map((m) => ({ id: m.id, nome: m.nome })),
     recentes: atividadesRecentes('a.usuario_id IN (SELECT aluno_id FROM turma_membros WHERE turma_id = ?)', [turma.id], 30),
     ranking: {
       semana: montarRanking({ filtro: 'u.id IN (SELECT aluno_id FROM turma_membros WHERE turma_id = ?)', params: [turma.id], periodo: 'semana' }).ranking,
@@ -294,7 +294,7 @@ rotas.post('/missoes', limitar('missao', 30, HORA), (req, res) => {
   const hoje = diaLocal();
   const fim = lerPrazo(corpo, hoje);
   const periodo = fim === hoje ? 'diaria' : 'semanal'; // só o rótulo; o que vale é a data do prazo
-  const materia = corpo.materia && materiasDaSerie(turma.serie).some((m) => m.id === corpo.materia) ? corpo.materia : null;
+  const materia = corpo.materia && materiasDaSerie(serieEmUso(turma.serie)).some((m) => m.id === corpo.materia) ? corpo.materia : null;
   const questoes = tipo === 'quiz' ? lerQuestoes(corpo.questoes) : null;
 
   const { lastInsertRowid } = db

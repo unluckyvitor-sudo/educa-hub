@@ -146,6 +146,8 @@ Lista vazia quer dizer que nada se atravessa. Rode sempre que criar ou mexer em 
 ]],
 ```
 
+**Vídeo-aula no resumo:** coloque o arquivo `.mp4` (H.264) em `client/public/videos/` e aponte o tópico para ele com `v: '/videos/nome-do-arquivo.mp4'`. O vídeo aparece no resumo do tópico (botão "Resumo e vídeo" em Minhas matérias) e na Biblioteca. Hoje há dois, nos tópicos de Matemática do 7º ano: *Números inteiros e racionais* e *Equações, razão e proporção*.
+
 Novos itens da loja entram em `server/src/loja.js` (nome, preço, raridade) e em `client/src/gato/acessorios.ts` (o desenho 3D, com o mesmo id). Depois de desenhar um acessório, inclua-o na lista `ENCAIXE` do laboratório e rode `verificarColisoes()` (ver "Nada atravessa o gato").
 
 ## Caderno de erros
@@ -261,6 +263,7 @@ Em outra hospedagem, sem contêiner:
 | `EDUCAHUB_DADOS` | Pasta do banco e das cópias de segurança. Precisa estar no disco persistente. |
 | `EDUCAHUB_PROXY` | Use `1` quando houver um proxy da hospedagem na frente (é o caso comum). Sem isso o cookie de sessão não é marcado como seguro e todos os visitantes parecem vir do mesmo endereço. |
 | `EDUCAHUB_ADMIN_SENHA` | Senha inicial do `admin` (mínimo de 10 caracteres). Pode ser definida antes ou depois de o servidor ligar pela primeira vez: ela vale enquanto a senha sorteada não tiver sido trocada. Troque-a em Configurações depois do primeiro acesso; a partir daí a variável não tem mais efeito e pode ser removida. |
+| `EDUCAHUB_SERIES` | Limita os níveis oferecidos, por exemplo `F7` (só o 7º ano, para uma demonstração) ou `F6,F7`. Os outros somem do cadastro, das turmas novas e da Biblioteca; contas e turmas que estavam neles passam a usar o primeiro nível da lista. Nada é apagado: sem a variável, tudo volta como era. |
 | `TZ` | Fuso que define quando o dia vira (sequência, missões do dia). O `Dockerfile` usa `America/Sao_Paulo`. |
 | `EDUCAHUB_RESPONSAVEL`, `EDUCAHUB_CONTATO` | Quem responde pela instalação e como falar com essa pessoa (aparecem nos termos). |
 | `EDUCAHUB_COPIAS` | Outra pasta para as cópias de segurança (opcional). |

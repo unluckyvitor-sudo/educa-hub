@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { db, diaLocal, diasAtras, PASTA_DADOS } from '../db.js';
 import { exigirPapel, gerarHash, conferirSenha, encerrarSessoesDoUsuario, inteiro } from '../auth.js';
 import { registrar, ultimosRegistros } from '../registro.js';
-import { SERIES, SERIE_POR_ID } from '../conteudo/index.js';
+import { SERIES_ATIVAS, SERIE_POR_ID, serieEmUso } from '../conteudo/index.js';
 import { concederGanho } from '../regras.js';
 import { buscarUsuario } from '../consultas.js';
 import { estaOnline, totalOnline, notificar, desconectarUsuario } from '../tempoReal.js';
@@ -57,8 +57,8 @@ function formatarUsuario(u) {
     nome: u.nome,
     usuario: u.usuario,
     email: u.email,
-    serie: u.serie,
-    serieNome: SERIE_POR_ID[u.serie]?.nome ?? null,
+    serie: u.papel === 'aluno' ? serieEmUso(u.serie) : u.serie,
+    serieNome: SERIE_POR_ID[u.papel === 'aluno' ? serieEmUso(u.serie) : u.serie]?.nome ?? null,
     instituicao: u.instituicao,
     disciplinas: u.disciplinas,
     xp: u.xp,
@@ -75,9 +75,10 @@ rotas.get('/resumo', async (_req, res) => {
   const porDia = Object.fromEntries(
     db.prepare('SELECT dia, COUNT(*) AS n FROM atividades WHERE dia >= ? GROUP BY dia').all(diasAtras(13)).map((r) => [r.dia, r.n]),
   );
-  const porSerie = Object.fromEntries(
-    db.prepare("SELECT serie, COUNT(*) AS n FROM usuarios WHERE papel = 'aluno' GROUP BY serie").all().map((r) => [r.serie, r.n]),
-  );
+  const porSerie = {};
+  for (const r of db.prepare("SELECT serie, COUNT(*) AS n FROM usuarios WHERE papel = 'aluno' GROUP BY serie").all()) {
+    porSerie[serieEmUso(r.serie)] = (porSerie[serieEmUso(r.serie)] ?? 0) + r.n;
+  }
   res.json({
     alunos: contar("SELECT COUNT(*) AS n FROM usuarios WHERE papel = 'aluno'"),
     professores: contar("SELECT COUNT(*) AS n FROM usuarios WHERE papel = 'professor' AND status = 'ativo'"),
@@ -95,7 +96,7 @@ rotas.get('/resumo', async (_req, res) => {
       const dia = diasAtras(13 - i);
       return { dia, total: porDia[dia] ?? 0 };
     }),
-    alunosPorSerie: SERIES.map((s) => ({ serie: s.id, nome: s.nome, total: porSerie[s.id] ?? 0 })),
+    alunosPorSerie: SERIES_ATIVAS.map((s) => ({ serie: s.id, nome: s.nome, total: porSerie[s.id] ?? 0 })),
   });
 });
 
@@ -203,7 +204,7 @@ rotas.get('/turmas', (_req, res) => {
        FROM turmas t JOIN usuarios p ON p.id = t.professor_id ORDER BY t.id DESC`,
     )
     .all()
-    .map((t) => ({ id: t.id, nome: t.nome, serieNome: SERIE_POR_ID[t.serie]?.nome, descricao: t.descricao, codigo: t.codigo, professor: t.professor, membros: t.membros, criadoEm: t.criado_em }));
+    .map((t) => ({ id: t.id, nome: t.nome, serieNome: SERIE_POR_ID[serieEmUso(t.serie)]?.nome, descricao: t.descricao, codigo: t.codigo, professor: t.professor, membros: t.membros, criadoEm: t.criado_em }));
   res.json({ turmas });
 });
 

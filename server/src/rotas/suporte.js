@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { db, transacao } from '../db.js';
 import { exigirLogin, exigirPapel, texto, inteiro, ErroDeEntrada } from '../auth.js';
-import { SERIE_POR_ID } from '../conteudo/index.js';
+import { SERIE_POR_ID, comSerieEmUso } from '../conteudo/index.js';
 import { buscarUsuario } from '../consultas.js';
 import { notificar, enviarPara } from '../tempoReal.js';
 import { limitar, MINUTO, HORA } from '../limites.js';
@@ -171,7 +171,7 @@ rotas.get('/suporte/chamados/:id', exigirLogin, (req, res) => {
     // Quem atende precisa saber com quem está falando.
     autor:
       papel === 'atendente' && autor
-        ? { id: autor.id, nome: autor.nome, usuario: autor.usuario, papel: autor.papel, status: autor.status, serieNome: SERIE_POR_ID[autor.serie]?.nome ?? null }
+        ? { id: autor.id, nome: autor.nome, usuario: autor.usuario, papel: autor.papel, status: autor.status, serieNome: SERIE_POR_ID[comSerieEmUso(autor).serie]?.nome ?? null }
         : null,
   });
 });

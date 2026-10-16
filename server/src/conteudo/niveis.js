@@ -56,6 +56,32 @@ export const MATERIAS = {
 
 export const SERIE_POR_ID = Object.fromEntries(SERIES.map((s) => [s.id, s]));
 
+// ───────────── Níveis em uso nesta instalação ─────────────
+// EDUCAHUB_SERIES limita os níveis oferecidos: "F7" para uma demonstração só do 7º ano, "F6,F7" para dois. Sem ela, todos.
+// O conteúdo dos outros níveis continua no projeto e o banco não é alterado: eles só somem das escolhas, e contas e turmas
+// que estavam neles passam a usar o primeiro nível ativo enquanto a variável existir.
+const pedidas = String(process.env.EDUCAHUB_SERIES ?? '')
+  .split(',')
+  .map((id) => id.trim().toUpperCase())
+  .filter((id) => Object.hasOwn(SERIE_POR_ID, id));
+if (process.env.EDUCAHUB_SERIES && !pedidas.length) console.error(`EDUCAHUB_SERIES ignorada: nenhum nível reconhecido em "${process.env.EDUCAHUB_SERIES}".`);
+
+export const SERIES_ATIVAS = pedidas.length ? SERIES.filter((s) => pedidas.includes(s.id)) : SERIES;
+export const ETAPAS_ATIVAS = ETAPAS.filter((e) => SERIES_ATIVAS.some((s) => s.etapa === e.id));
+export const SERIES_INATIVAS = SERIES.filter((s) => !SERIES_ATIVAS.includes(s)).map((s) => s.id);
+
+/** Nível que pode ser escolhido agora (cadastro, turma nova, tópico novo). */
 export function serieValida(id) {
-  return Object.hasOwn(SERIE_POR_ID, id);
+  return SERIES_ATIVAS.some((s) => s.id === id);
+}
+
+/** Nível que vale de fato: o próprio, se estiver ativo; senão, o primeiro ativo. Vazio continua vazio (professores). */
+export function serieEmUso(serie) {
+  return !serie || serieValida(serie) ? serie : SERIES_ATIVAS[0].id;
+}
+
+/** O usuário com o nível que vale de fato (só alunos têm nível). */
+export function comSerieEmUso(usuario) {
+  if (!usuario || usuario.papel !== 'aluno' || serieEmUso(usuario.serie) === usuario.serie) return usuario;
+  return { ...usuario, serie: serieEmUso(usuario.serie) };
 }
